@@ -77,14 +77,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Nova Assistant — AI chat with in-app browser" },
+      { name: "description", content: "Chat with an AI assistant that opens websites right inside the app. Available on the web and as a downloadable Windows app." },
+      { property: "og:title", content: "Nova Assistant" },
+      { property: "og:description", content: "AI chat with an in-app browser. Downloadable Windows app." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
