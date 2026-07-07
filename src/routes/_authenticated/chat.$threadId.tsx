@@ -12,6 +12,7 @@ import {
   getThreadMessages,
   listThreads,
 } from "@/lib/threads.functions";
+import { getMyRole } from "@/lib/owner.functions";
 import { Button } from "@/components/ui/button";
 import {
   Conversation,
@@ -36,6 +37,7 @@ import {
   ExternalLink,
   Download,
   MessageSquare,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -69,6 +71,12 @@ function ChatThread() {
   const { data: threads = [] } = useQuery({
     queryKey: ["threads"],
     queryFn: () => listFn(),
+  });
+
+  const roleFn = useServerFn(getMyRole);
+  const { data: myRole } = useQuery({
+    queryKey: ["my-role"],
+    queryFn: () => roleFn(),
   });
 
   const { data: initialMessages, isLoading: msgsLoading } = useQuery({
@@ -214,6 +222,13 @@ function ChatThread() {
           ))}
         </div>
         <div className="p-3 border-t border-sidebar-border space-y-2">
+          {myRole?.isOwner && (
+            <Link to="/owner" className="block">
+              <Button variant="outline" size="sm" className="w-full justify-start">
+                <Shield className="w-4 h-4" /> Owner Panel
+              </Button>
+            </Link>
+          )}
           <Button variant="outline" size="sm" className="w-full justify-start" onClick={downloadWindows}>
             <Download className="w-4 h-4" /> Download for Windows
           </Button>
