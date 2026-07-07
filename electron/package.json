@@ -1,0 +1,8 @@
+{
+  "name": "nova-assistant",
+  "productName": "Nova Assistant",
+  "version": "1.0.0",
+  "description": "AI assistant with in-app browser",
+  "main": "main.cjs",
+  "author": "Nova"
+}
