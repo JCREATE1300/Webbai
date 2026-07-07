@@ -79,10 +79,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Nova Assistant — AI chat with in-app browser" },
       { name: "description", content: "Chat with an AI assistant that opens websites right inside the app. Available on the web and as a downloadable Windows app." },
-      { property: "og:title", content: "Nova Assistant" },
-      { property: "og:description", content: "AI chat with an in-app browser. Downloadable Windows app." },
+      { property: "og:title", content: "Nova Assistant — AI chat with in-app browser" },
+      { property: "og:description", content: "Chat with an AI assistant that opens websites right inside the app. Available on the web and as a downloadable Windows app." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Nova Assistant — AI chat with in-app browser" },
+      { name: "twitter:description", content: "Chat with an AI assistant that opens websites right inside the app. Available on the web and as a downloadable Windows app." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6e1193df-110c-41c7-86f3-18176768bc4b/id-preview-9d2baaed--a142bf7b-795a-4689-a8be-791b339532c6.lovable.app-1783446001934.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6e1193df-110c-41c7-86f3-18176768bc4b/id-preview-9d2baaed--a142bf7b-795a-4689-a8be-791b339532c6.lovable.app-1783446001934.png" },
     ],
     links: [
       {
