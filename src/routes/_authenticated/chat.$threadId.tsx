@@ -222,6 +222,13 @@ function ChatThread() {
           ))}
         </div>
         <div className="p-3 border-t border-sidebar-border space-y-2">
+          {myRole?.isOwner && (
+            <Link to="/owner" className="block">
+              <Button variant="outline" size="sm" className="w-full justify-start">
+                <Shield className="w-4 h-4" /> Owner Panel
+              </Button>
+            </Link>
+          )}
           <Button variant="outline" size="sm" className="w-full justify-start" onClick={downloadWindows}>
             <Download className="w-4 h-4" /> Download for Windows
           </Button>
