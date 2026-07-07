@@ -12,6 +12,7 @@ import {
   getThreadMessages,
   listThreads,
 } from "@/lib/threads.functions";
+import { getMyRole } from "@/lib/owner.functions";
 import { Button } from "@/components/ui/button";
 import {
   Conversation,
@@ -36,6 +37,7 @@ import {
   ExternalLink,
   Download,
   MessageSquare,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -69,6 +71,12 @@ function ChatThread() {
   const { data: threads = [] } = useQuery({
     queryKey: ["threads"],
     queryFn: () => listFn(),
+  });
+
+  const roleFn = useServerFn(getMyRole);
+  const { data: myRole } = useQuery({
+    queryKey: ["my-role"],
+    queryFn: () => roleFn(),
   });
 
   const { data: initialMessages, isLoading: msgsLoading } = useQuery({
