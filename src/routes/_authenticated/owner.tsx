@@ -1,13 +1,24 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { getMyRole, getOwnerStats } from "@/lib/owner.functions";
 import { Button } from "@/components/ui/button";
 import { Shield, ArrowLeft, Users, MessagesSquare, MessageSquare } from "lucide-react";
+import { isRedirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/owner")({
   head: () => ({ meta: [{ title: "Owner Panel — Nova Assistant" }] }),
+  beforeLoad: async () => {
+    try {
+      const role = await getMyRole();
+      if (!role.isOwner) {
+        throw redirect({ to: "/chat" });
+      }
+    } catch (err) {
+      if (isRedirect(err)) throw err;
+      throw redirect({ to: "/chat" });
+    }
+  },
   component: OwnerPanel,
 });
 
