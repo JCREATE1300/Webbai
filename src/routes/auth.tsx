@@ -100,14 +100,15 @@ function AuthPage() {
           <p className="text-sm text-muted-foreground">Chat with AI. Open any website in-app.</p>
         </div>
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
-          <form onSubmit={submit} className="space-y-4">
+          <form onSubmit={submit} className="space-y-4" noValidate>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input id="email" type="text" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {mode === "signin" ? "Sign in" : "Create account"}
