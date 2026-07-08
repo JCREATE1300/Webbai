@@ -23,31 +23,13 @@ export const Route = createFileRoute("/_authenticated/owner")({
 });
 
 function OwnerPanel() {
-  const navigate = useNavigate();
-  const roleFn = useServerFn(getMyRole);
   const statsFn = useServerFn(getOwnerStats);
-
-  const { data: role, isLoading: roleLoading } = useQuery({
-    queryKey: ["my-role"],
-    queryFn: () => roleFn(),
-  });
-
-  useEffect(() => {
-    if (!roleLoading && role && !role.isOwner) {
-      navigate({ to: "/chat", replace: true });
-    }
-  }, [role, roleLoading, navigate]);
 
   const { data: stats, isLoading, error } = useQuery({
     queryKey: ["owner-stats"],
     queryFn: () => statsFn(),
-    enabled: !!role?.isOwner,
   });
 
-  if (roleLoading || !role) {
-    return <div className="min-h-screen grid place-items-center text-muted-foreground text-sm">Loading…</div>;
-  }
-  if (!role.isOwner) return null;
 
   return (
     <div className="min-h-screen bg-background">
