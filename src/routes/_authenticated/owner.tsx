@@ -1,42 +1,35 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { getMyRole, getOwnerStats } from "@/lib/owner.functions";
 import { Button } from "@/components/ui/button";
 import { Shield, ArrowLeft, Users, MessagesSquare, MessageSquare } from "lucide-react";
+import { isRedirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/owner")({
   head: () => ({ meta: [{ title: "Owner Panel — Nova Assistant" }] }),
+  beforeLoad: async () => {
+    try {
+      const role = await getMyRole();
+      if (!role.isOwner) {
+        throw redirect({ to: "/chat" });
+      }
+    } catch (err) {
+      if (isRedirect(err)) throw err;
+      throw redirect({ to: "/chat" });
+    }
+  },
   component: OwnerPanel,
 });
 
 function OwnerPanel() {
-  const navigate = useNavigate();
-  const roleFn = useServerFn(getMyRole);
   const statsFn = useServerFn(getOwnerStats);
-
-  const { data: role, isLoading: roleLoading } = useQuery({
-    queryKey: ["my-role"],
-    queryFn: () => roleFn(),
-  });
-
-  useEffect(() => {
-    if (!roleLoading && role && !role.isOwner) {
-      navigate({ to: "/chat", replace: true });
-    }
-  }, [role, roleLoading, navigate]);
 
   const { data: stats, isLoading, error } = useQuery({
     queryKey: ["owner-stats"],
     queryFn: () => statsFn(),
-    enabled: !!role?.isOwner,
   });
 
-  if (roleLoading || !role) {
-    return <div className="min-h-screen grid place-items-center text-muted-foreground text-sm">Loading…</div>;
-  }
-  if (!role.isOwner) return null;
 
   return (
     <div className="min-h-screen bg-background">
