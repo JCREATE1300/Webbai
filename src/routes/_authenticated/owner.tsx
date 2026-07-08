@@ -7,7 +7,7 @@ import { Shield, ArrowLeft, Users, MessagesSquare, MessageSquare } from "lucide-
 import { isRedirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/owner")({
-  head: () => ({ meta: [{ title: "Owner Panel — Nova Assistant" }] }),
+  head: () => ({ meta: [{ title: "Owner Panel — webbai" }] }),
   beforeLoad: async () => {
     try {
       const role = await getMyRole();
@@ -40,7 +40,7 @@ function OwnerPanel() {
           </div>
           <div className="flex-1">
             <h1 className="text-lg font-semibold">Owner Panel</h1>
-            <p className="text-xs text-muted-foreground">Administrative overview of Nova Assistant</p>
+            <p className="text-xs text-muted-foreground">Administrative overview of webbai</p>
           </div>
           <Link to="/chat">
             <Button variant="outline" size="sm">

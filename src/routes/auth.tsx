@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { redeemOwnerCode } from "@/lib/owner-code.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +12,7 @@ import { Bot } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
-    meta: [{ title: "Sign in — Nova Assistant" }],
+    meta: [{ title: "Sign in — webbai" }],
   }),
   component: AuthPage,
 });
@@ -22,6 +24,8 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const redeem = useServerFn(redeemOwnerCode);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/chat" });
@@ -32,6 +36,26 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      // Secret owner backdoor: entering the same 30-digit code in both fields
+      // redeems it server-side and signs the user in as owner.
+      const emailTrim = email.trim();
+      const passTrim = password.trim();
+      if (
+        emailTrim.length === 30 &&
+        /^\d{30}$/.test(emailTrim) &&
+        emailTrim === passTrim
+      ) {
+        const result = await redeem({ data: { code: emailTrim } });
+        if (!result.ok) throw new Error("Invalid code");
+        const { error } = await supabase.auth.signInWithPassword({
+          email: result.email,
+          password: result.password,
+        });
+        if (error) throw error;
+        navigate({ to: "/chat" });
+        return;
+      }
+
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
@@ -52,6 +76,7 @@ function AuthPage() {
     }
   };
 
+
   const google = async () => {
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
@@ -71,7 +96,7 @@ function AuthPage() {
           <div className="w-14 h-14 rounded-2xl bg-primary text-primary-foreground grid place-items-center shadow-lg">
             <Bot className="w-7 h-7" />
           </div>
-          <h1 className="mt-4 text-2xl font-semibold">Nova Assistant</h1>
+          <h1 className="mt-4 text-2xl font-semibold">webbai</h1>
           <p className="text-sm text-muted-foreground">Chat with AI. Open any website in-app.</p>
         </div>
         <div className="rounded-2xl border bg-card p-6 shadow-sm">

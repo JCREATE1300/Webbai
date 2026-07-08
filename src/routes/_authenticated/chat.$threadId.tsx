@@ -43,7 +43,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/chat/$threadId")({
   head: () => ({
-    meta: [{ title: "Nova Assistant" }],
+    meta: [{ title: "webbai" }],
   }),
   component: ChatThread,
 });
@@ -188,7 +188,7 @@ function ChatThread() {
           <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground grid place-items-center">
             <Bot className="w-4 h-4" />
           </div>
-          <div className="font-semibold text-sm">Nova Assistant</div>
+          <div className="font-semibold text-sm">webbai</div>
         </div>
         <div className="p-3">
           <Button onClick={newChat} className="w-full justify-start" size="sm">
