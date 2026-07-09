@@ -4,5 +4,11 @@
   "version": "1.1.0",
   "description": "webbai desktop — chat + in-window AI page assistant",
   "main": "main.cjs",
-  "author": "webbai"
+  "author": "webbai",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "license": "ISC"
 }
