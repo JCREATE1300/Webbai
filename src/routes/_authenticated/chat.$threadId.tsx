@@ -300,7 +300,7 @@ function ChatThread() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setWebsite({ url, title: title || url })}
+                              onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
                             >
                               Open
                             </Button>
