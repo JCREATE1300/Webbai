@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { createThread, listThreads } from "@/lib/threads.functions";
@@ -10,13 +10,16 @@ export const Route = createFileRoute("/_authenticated/chat")({
 });
 
 function ChatIndex() {
+  const location = useLocation();
   const navigate = useNavigate();
   const list = useServerFn(listThreads);
   const create = useServerFn(createThread);
   const ranRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const isChatIndex = location.pathname.replace(/\/$/, "") === "/chat";
 
   useEffect(() => {
+    if (!isChatIndex) return;
     if (ranRef.current) return;
     ranRef.current = true;
     (async () => {
@@ -42,7 +45,11 @@ function ChatIndex() {
         toast.error(msg);
       }
     })();
-  }, [list, create, navigate]);
+  }, [isChatIndex, list, create, navigate]);
+
+  if (!isChatIndex) {
+    return <Outlet />;
+  }
 
   if (error) {
     return (
