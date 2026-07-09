@@ -339,48 +339,6 @@ function ChatThread() {
         </div>
       </main>
 
-      {/* In-app website panel */}
-      {website && (
-        <aside className="w-[45%] min-w-[380px] flex flex-col bg-background">
-          <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/40">
-            <Globe className="w-4 h-4 text-muted-foreground" />
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium truncate">{website.title}</div>
-              <div className="text-xs text-muted-foreground truncate">{website.url}</div>
-            </div>
-            <a
-              href={website.url}
-              target="_blank"
-              rel="noreferrer"
-              className="p-2 rounded hover:bg-accent"
-              title="Open in new tab"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </a>
-            <button
-              onClick={() => setWebsite(null)}
-              className="p-2 rounded hover:bg-accent"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <iframe
-            key={website.url}
-            src={website.url}
-            title={website.title}
-            className="flex-1 w-full bg-white"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-          />
-          <div className="px-3 py-2 border-t text-xs text-muted-foreground bg-muted/30">
-            Some sites block embedding. If the panel is blank,{" "}
-            <a href={website.url} target="_blank" rel="noreferrer" className="underline">
-              open in a new tab
-            </a>
-            .
-          </div>
-        </aside>
-      )}
     </div>
   );
 }
