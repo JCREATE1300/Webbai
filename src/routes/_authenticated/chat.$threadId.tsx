@@ -159,12 +159,12 @@ function ChatThread() {
 
   const downloadWindows = async () => {
     try {
-      const res = await fetch("/nova-assistant-windows.zip");
+      const res = await fetch("/webbai-windows.zip");
       if (!res.ok) throw new Error("Download not ready yet");
       const blob = await res.blob();
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = "nova-assistant-windows.zip";
+      a.download = "webbai-windows.zip";
       a.click();
       URL.revokeObjectURL(a.href);
     } catch (err) {
