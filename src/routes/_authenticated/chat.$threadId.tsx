@@ -33,8 +33,6 @@ import {
   Trash2,
   LogOut,
   Globe,
-  X,
-  ExternalLink,
   Download,
   MessageSquare,
   Shield,
@@ -48,8 +46,6 @@ export const Route = createFileRoute("/_authenticated/chat/$threadId")({
   component: ChatThread,
 });
 
-type WebsiteView = { url: string; title: string };
-
 function ChatThread() {
   const { threadId } = Route.useParams();
   const navigate = useNavigate();
@@ -59,7 +55,6 @@ function ChatThread() {
   const deleteFn = useServerFn(deleteThread);
   const getMsgsFn = useServerFn(getThreadMessages);
 
-  const [website, setWebsite] = useState<WebsiteView | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -111,20 +106,19 @@ function ChatThread() {
     },
   });
 
-  // Auto-open website when a tool result comes in
+  // Auto-open website in a new window when a tool result comes in
   const lastOpenedRef = useRef<string>("");
   useEffect(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const m = messages[i];
       if (m.role !== "assistant") continue;
       for (const part of m.parts) {
-        // AI SDK tool part shape: type: "tool-open_website"
         const p = part as any;
         if (p.type === "tool-open_website" && p.state === "output-available") {
           const key = `${m.id}:${p.toolCallId}`;
           if (lastOpenedRef.current !== key && p.output?.url) {
             lastOpenedRef.current = key;
-            setWebsite({ url: p.output.url, title: p.output.title || p.output.url });
+            window.open(p.output.url, "_blank", "noopener,noreferrer");
           }
         }
       }
@@ -165,12 +159,12 @@ function ChatThread() {
 
   const downloadWindows = async () => {
     try {
-      const res = await fetch("/nova-assistant-windows.zip");
+      const res = await fetch("/webbai-windows.zip");
       if (!res.ok) throw new Error("Download not ready yet");
       const blob = await res.blob();
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = "nova-assistant-windows.zip";
+      a.download = "webbai-windows.zip";
       a.click();
       URL.revokeObjectURL(a.href);
     } catch (err) {
@@ -239,7 +233,7 @@ function ChatThread() {
       </aside>
 
       {/* Chat pane */}
-      <main className={`flex-1 flex flex-col min-w-0 ${website ? "border-r" : ""}`}>
+      <main className="flex-1 flex flex-col min-w-0">
         <Conversation className="flex-1">
           <ConversationContent>
             {(messages.length === 0 && !msgsLoading) && (
@@ -249,7 +243,7 @@ function ChatThread() {
                 </div>
                 <h1 className="mt-4 text-2xl font-semibold">How can I help?</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Ask a question, or tell me to <span className="font-medium">open a website</span> — I'll load it right here in the app.
+                  Ask a question, or say <span className="font-medium">"open a website"</span> — it opens in a new window with a built-in AI assistant (Windows app).
                 </p>
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
                   {[
@@ -301,7 +295,7 @@ function ChatThread() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setWebsite({ url, title: title || url })}
+                              onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
                             >
                               Open
                             </Button>
@@ -340,48 +334,6 @@ function ChatThread() {
         </div>
       </main>
 
-      {/* In-app website panel */}
-      {website && (
-        <aside className="w-[45%] min-w-[380px] flex flex-col bg-background">
-          <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/40">
-            <Globe className="w-4 h-4 text-muted-foreground" />
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium truncate">{website.title}</div>
-              <div className="text-xs text-muted-foreground truncate">{website.url}</div>
-            </div>
-            <a
-              href={website.url}
-              target="_blank"
-              rel="noreferrer"
-              className="p-2 rounded hover:bg-accent"
-              title="Open in new tab"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </a>
-            <button
-              onClick={() => setWebsite(null)}
-              className="p-2 rounded hover:bg-accent"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <iframe
-            key={website.url}
-            src={website.url}
-            title={website.title}
-            className="flex-1 w-full bg-white"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-          />
-          <div className="px-3 py-2 border-t text-xs text-muted-foreground bg-muted/30">
-            Some sites block embedding. If the panel is blank,{" "}
-            <a href={website.url} target="_blank" rel="noreferrer" className="underline">
-              open in a new tab
-            </a>
-            .
-          </div>
-        </aside>
-      )}
     </div>
   );
 }

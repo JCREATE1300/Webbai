@@ -30,3 +30,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Electron build artifacts
+electron/node_modules/
+electron/release/

@@ -1,8 +1,17 @@
 {
-  "name": "nova-assistant",
-  "productName": "Nova Assistant",
-  "version": "1.0.0",
-  "description": "AI assistant with in-app browser",
+  "name": "webbai",
+  "productName": "webbai",
+  "version": "1.1.0",
+  "description": "webbai desktop — chat + in-window AI page assistant",
   "main": "main.cjs",
-  "author": "Nova"
+  "author": "webbai",
+  "devDependencies": {
+    "@electron/packager": "^20.0.2",
+    "electron": "^43.1.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "license": "ISC"
 }
