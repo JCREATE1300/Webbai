@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiBrowserAgentRouteImport } from './routes/api/browser-agent'
 import { Route as AuthenticatedOwnerRouteImport } from './routes/_authenticated/owner'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedChatThreadIdRouteImport } from './routes/_authenticated/chat.$threadId'
@@ -34,6 +35,11 @@ const IndexRoute = IndexRouteImport.update({
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBrowserAgentRoute = ApiBrowserAgentRouteImport.update({
+  id: '/api/browser-agent',
+  path: '/api/browser-agent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedOwnerRoute = AuthenticatedOwnerRouteImport.update({
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/owner': typeof AuthenticatedOwnerRoute
+  '/api/browser-agent': typeof ApiBrowserAgentRoute
   '/api/chat': typeof ApiChatRoute
   '/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
 }
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/owner': typeof AuthenticatedOwnerRoute
+  '/api/browser-agent': typeof ApiBrowserAgentRoute
   '/api/chat': typeof ApiChatRoute
   '/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
 }
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/owner': typeof AuthenticatedOwnerRoute
+  '/api/browser-agent': typeof ApiBrowserAgentRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
 }
@@ -86,10 +95,18 @@ export interface FileRouteTypes {
     | '/auth'
     | '/chat'
     | '/owner'
+    | '/api/browser-agent'
     | '/api/chat'
     | '/chat/$threadId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/chat' | '/owner' | '/api/chat' | '/chat/$threadId'
+  to:
+    | '/'
+    | '/auth'
+    | '/chat'
+    | '/owner'
+    | '/api/browser-agent'
+    | '/api/chat'
+    | '/chat/$threadId'
   id:
     | '__root__'
     | '/'
@@ -97,6 +114,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/chat'
     | '/_authenticated/owner'
+    | '/api/browser-agent'
     | '/api/chat'
     | '/_authenticated/chat/$threadId'
   fileRoutesById: FileRoutesById
@@ -105,6 +123,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiBrowserAgentRoute: typeof ApiBrowserAgentRoute
   ApiChatRoute: typeof ApiChatRoute
 }
 
@@ -136,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/api/chat'
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/browser-agent': {
+      id: '/api/browser-agent'
+      path: '/api/browser-agent'
+      fullPath: '/api/browser-agent'
+      preLoaderRoute: typeof ApiBrowserAgentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/owner': {
@@ -190,18 +216,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiBrowserAgentRoute: ApiBrowserAgentRoute,
   ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

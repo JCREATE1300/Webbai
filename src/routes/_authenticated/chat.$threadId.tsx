@@ -111,20 +111,19 @@ function ChatThread() {
     },
   });
 
-  // Auto-open website when a tool result comes in
+  // Auto-open website in a new window when a tool result comes in
   const lastOpenedRef = useRef<string>("");
   useEffect(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const m = messages[i];
       if (m.role !== "assistant") continue;
       for (const part of m.parts) {
-        // AI SDK tool part shape: type: "tool-open_website"
         const p = part as any;
         if (p.type === "tool-open_website" && p.state === "output-available") {
           const key = `${m.id}:${p.toolCallId}`;
           if (lastOpenedRef.current !== key && p.output?.url) {
             lastOpenedRef.current = key;
-            setWebsite({ url: p.output.url, title: p.output.title || p.output.url });
+            window.open(p.output.url, "_blank", "noopener,noreferrer");
           }
         }
       }
