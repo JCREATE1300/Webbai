@@ -238,7 +238,7 @@ function ChatThread() {
       </aside>
 
       {/* Chat pane */}
-      <main className={`flex-1 flex flex-col min-w-0 ${website ? "border-r" : ""}`}>
+      <main className="flex-1 flex flex-col min-w-0">
         <Conversation className="flex-1">
           <ConversationContent>
             {(messages.length === 0 && !msgsLoading) && (
