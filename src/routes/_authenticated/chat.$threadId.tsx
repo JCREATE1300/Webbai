@@ -33,8 +33,6 @@ import {
   Trash2,
   LogOut,
   Globe,
-  X,
-  ExternalLink,
   Download,
   MessageSquare,
   Shield,
