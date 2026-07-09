@@ -5,7 +5,10 @@
   "description": "webbai desktop — chat + in-window AI page assistant",
   "main": "main.cjs",
   "author": "webbai",
-  "devDependencies": {},
+  "devDependencies": {
+    "@electron/packager": "^20.0.2",
+    "electron": "^43.1.0"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
