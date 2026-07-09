@@ -48,8 +48,6 @@ export const Route = createFileRoute("/_authenticated/chat/$threadId")({
   component: ChatThread,
 });
 
-type WebsiteView = { url: string; title: string };
-
 function ChatThread() {
   const { threadId } = Route.useParams();
   const navigate = useNavigate();
@@ -59,7 +57,6 @@ function ChatThread() {
   const deleteFn = useServerFn(deleteThread);
   const getMsgsFn = useServerFn(getThreadMessages);
 
-  const [website, setWebsite] = useState<WebsiteView | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
