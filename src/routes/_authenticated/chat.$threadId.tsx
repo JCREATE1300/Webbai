@@ -13,6 +13,7 @@ import {
   listThreads,
 } from "@/lib/threads.functions";
 import { getMyRole } from "@/lib/owner.functions";
+import { getWindowsDownloadUrl } from "@/lib/downloads.functions";
 import { Button } from "@/components/ui/button";
 import {
   Conversation,
@@ -36,6 +37,10 @@ import {
   Download,
   MessageSquare,
   Shield,
+  X,
+  Maximize2,
+  Minimize2,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -106,7 +111,10 @@ function ChatThread() {
     },
   });
 
-  // Auto-open website in a new window when a tool result comes in
+  // Embedded in-app browser panel
+  const [openedUrl, setOpenedUrl] = useState<string | null>(null);
+  const [openedTitle, setOpenedTitle] = useState<string>("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const lastOpenedRef = useRef<string>("");
   useEffect(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -118,7 +126,8 @@ function ChatThread() {
           const key = `${m.id}:${p.toolCallId}`;
           if (lastOpenedRef.current !== key && p.output?.url) {
             lastOpenedRef.current = key;
-            window.open(p.output.url, "_blank", "noopener,noreferrer");
+            setOpenedUrl(p.output.url);
+            setOpenedTitle(p.output.title || p.output.url);
           }
         }
       }
@@ -157,16 +166,17 @@ function ChatThread() {
     navigate({ to: "/auth" });
   };
 
+  const downloadFn = useServerFn(getWindowsDownloadUrl);
   const downloadWindows = async () => {
     try {
-      const res = await fetch("/webbai-windows.zip");
-      if (!res.ok) throw new Error("Download not ready yet");
-      const blob = await res.blob();
+      const { url, filename } = await downloadFn();
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "webbai-windows.zip";
+      a.href = url;
+      a.download = filename;
+      a.rel = "noopener";
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(a.href);
+      a.remove();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Download failed");
     }
