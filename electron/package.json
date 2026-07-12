@@ -13,5 +13,32 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "license": "ISC"
+  "license": "ISC",
+  "build": {
+    "appId": "app.webbai.desktop",
+    "productName": "webbai",
+    "directories": {
+      "output": "release",
+      "buildResources": "."
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "artifactName": "webbai-setup-${version}.exe"
+    }
+  }
 }
