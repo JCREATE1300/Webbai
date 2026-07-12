@@ -13,6 +13,7 @@ import {
   listThreads,
 } from "@/lib/threads.functions";
 import { getMyRole } from "@/lib/owner.functions";
+import { getWindowsDownloadUrl } from "@/lib/downloads.functions";
 import { Button } from "@/components/ui/button";
 import {
   Conversation,
@@ -36,6 +37,10 @@ import {
   Download,
   MessageSquare,
   Shield,
+  X,
+  Maximize2,
+  Minimize2,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -106,7 +111,10 @@ function ChatThread() {
     },
   });
 
-  // Auto-open website in a new window when a tool result comes in
+  // Embedded in-app browser panel
+  const [openedUrl, setOpenedUrl] = useState<string | null>(null);
+  const [openedTitle, setOpenedTitle] = useState<string>("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const lastOpenedRef = useRef<string>("");
   useEffect(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -118,7 +126,8 @@ function ChatThread() {
           const key = `${m.id}:${p.toolCallId}`;
           if (lastOpenedRef.current !== key && p.output?.url) {
             lastOpenedRef.current = key;
-            window.open(p.output.url, "_blank", "noopener,noreferrer");
+            setOpenedUrl(p.output.url);
+            setOpenedTitle(p.output.title || p.output.url);
           }
         }
       }
@@ -157,16 +166,17 @@ function ChatThread() {
     navigate({ to: "/auth" });
   };
 
+  const downloadFn = useServerFn(getWindowsDownloadUrl);
   const downloadWindows = async () => {
     try {
-      const res = await fetch("/webbai-windows.zip");
-      if (!res.ok) throw new Error("Download not ready yet");
-      const blob = await res.blob();
+      const { url, filename } = await downloadFn();
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "webbai-windows.zip";
+      a.href = url;
+      a.download = filename;
+      a.rel = "noopener";
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(a.href);
+      a.remove();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Download failed");
     }
@@ -243,7 +253,7 @@ function ChatThread() {
                 </div>
                 <h1 className="mt-4 text-2xl font-semibold">How can I help?</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Ask a question, or say <span className="font-medium">"open a website"</span> — it opens in a new window with a built-in AI assistant (Windows app).
+                  Ask a question, or say <span className="font-medium">"open a website"</span> — it opens in a panel next to the chat with a fullscreen toggle.
                 </p>
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
                   {[
@@ -295,7 +305,10 @@ function ChatThread() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
+                              onClick={() => {
+                                setOpenedUrl(url);
+                                setOpenedTitle(title);
+                              }}
                             >
                               Open
                             </Button>
@@ -334,6 +347,61 @@ function ChatThread() {
         </div>
       </main>
 
+      {/* In-app browser panel */}
+      {openedUrl && (
+        <section
+          className={
+            isFullscreen
+              ? "fixed inset-0 z-50 bg-background flex flex-col"
+              : "w-[46%] shrink-0 border-l bg-background flex flex-col"
+          }
+        >
+          <div className="h-11 shrink-0 flex items-center gap-2 px-3 border-b bg-muted/40">
+            <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-medium truncate">{openedTitle}</div>
+              <div className="text-[10px] text-muted-foreground truncate">{openedUrl}</div>
+            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              title="Open in system browser"
+              onClick={() => window.open(openedUrl, "_blank", "noopener,noreferrer")}
+            >
+              <ExternalLink className="w-4 h-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              onClick={() => setIsFullscreen((v) => !v)}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              title="Close"
+              onClick={() => {
+                setOpenedUrl(null);
+                setIsFullscreen(false);
+              }}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          <iframe
+            src={openedUrl}
+            title={openedTitle}
+            className="flex-1 w-full bg-white"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
+            referrerPolicy="no-referrer"
+          />
+        </section>
+      )}
     </div>
   );
 }
