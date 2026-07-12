@@ -253,7 +253,7 @@ function ChatThread() {
                 </div>
                 <h1 className="mt-4 text-2xl font-semibold">How can I help?</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Ask a question, or say <span className="font-medium">"open a website"</span> — it opens in a new window with a built-in AI assistant (Windows app).
+                  Ask a question, or say <span className="font-medium">"open a website"</span> — it opens in a panel next to the chat with a fullscreen toggle.
                 </p>
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
                   {[
