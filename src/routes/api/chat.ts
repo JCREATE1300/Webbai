@@ -7,7 +7,7 @@ import {
   type UIMessage,
 } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+import { createOpenRouterProvider, OPENROUTER_MODEL } from "@/lib/ai-gateway.server";
 
 type ChatBody = { messages?: unknown; threadId?: string };
 
@@ -20,12 +20,12 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("Messages required", { status: 400 });
         }
 
-        const key = process.env.LOVABLE_API_KEY;
-        if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
+        const key = process.env.OPENROUTER_API_KEY;
+        if (!key) return new Response("Missing OPENROUTER_API_KEY", { status: 500 });
 
         const authHeader = request.headers.get("authorization");
-        const gateway = createLovableAiGatewayProvider(key);
-        const model = gateway("google/gemini-3-flash-preview");
+        const openrouter = createOpenRouterProvider(key);
+        const model = openrouter(OPENROUTER_MODEL);
         const threadId = body.threadId;
 
         const messages = body.messages as UIMessage[];
