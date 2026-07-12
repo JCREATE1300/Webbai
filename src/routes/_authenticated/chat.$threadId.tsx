@@ -305,7 +305,10 @@ function ChatThread() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
+                              onClick={() => {
+                                setOpenedUrl(url);
+                                setOpenedTitle(title);
+                              }}
                             >
                               Open
                             </Button>
@@ -344,6 +347,61 @@ function ChatThread() {
         </div>
       </main>
 
+      {/* In-app browser panel */}
+      {openedUrl && (
+        <section
+          className={
+            isFullscreen
+              ? "fixed inset-0 z-50 bg-background flex flex-col"
+              : "w-[46%] shrink-0 border-l bg-background flex flex-col"
+          }
+        >
+          <div className="h-11 shrink-0 flex items-center gap-2 px-3 border-b bg-muted/40">
+            <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-medium truncate">{openedTitle}</div>
+              <div className="text-[10px] text-muted-foreground truncate">{openedUrl}</div>
+            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              title="Open in system browser"
+              onClick={() => window.open(openedUrl, "_blank", "noopener,noreferrer")}
+            >
+              <ExternalLink className="w-4 h-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              onClick={() => setIsFullscreen((v) => !v)}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              title="Close"
+              onClick={() => {
+                setOpenedUrl(null);
+                setIsFullscreen(false);
+              }}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          <iframe
+            src={openedUrl}
+            title={openedTitle}
+            className="flex-1 w-full bg-white"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
+            referrerPolicy="no-referrer"
+          />
+        </section>
+      )}
     </div>
   );
 }
