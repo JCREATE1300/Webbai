@@ -23,5 +23,6 @@ export function createOpenRouterProvider(apiKey: string) {
   });
 }
 
-// The model id you asked for. If OpenRouter rejects it, change this constant.
-export const OPENROUTER_MODEL = "google/gemma-4-26b-a4b-it:free";
+// Best-in-class free model on OpenRouter (strong reasoning + tool calling).
+// If OpenRouter rate-limits or deprecates it, swap for another ":free" model.
+export const OPENROUTER_MODEL = "deepseek/deepseek-chat-v3.1:free";
