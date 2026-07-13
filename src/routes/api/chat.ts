@@ -1,13 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  convertToModelMessages,
-  streamText,
-  tool,
-  stepCountIs,
-  type UIMessage,
-} from "ai";
-import { z } from "zod";
-import { createOpenRouterProvider, OPENROUTER_MODEL } from "@/lib/ai-gateway.server";
+import type { UIMessage } from "ai";
 
 type ChatBody = { messages?: unknown; threadId?: string };
 
@@ -24,6 +16,13 @@ export const Route = createFileRoute("/api/chat")({
         if (!key) return new Response("Missing OPENROUTER_API_KEY", { status: 500 });
 
         const authHeader = request.headers.get("authorization");
+        const [{ convertToModelMessages, streamText, tool, stepCountIs }, { z }, { createOpenRouterProvider, OPENROUTER_MODEL }] =
+          await Promise.all([
+            import("ai"),
+            import("zod"),
+            import("@/lib/ai-gateway.server"),
+          ]);
+
         const openrouter = createOpenRouterProvider(key);
         const model = openrouter(OPENROUTER_MODEL);
         const threadId = body.threadId;

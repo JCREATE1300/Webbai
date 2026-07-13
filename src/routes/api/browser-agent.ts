@@ -1,7 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { generateText, tool, stepCountIs } from "ai";
-import { z } from "zod";
-import { createOpenRouterProvider, OPENROUTER_MODEL } from "@/lib/ai-gateway.server";
 
 type Action =
   | { type: "click"; selector: string; reason?: string }
@@ -28,6 +25,13 @@ export const Route = createFileRoute("/api/browser-agent")({
 
         const key = process.env.OPENROUTER_API_KEY;
         if (!key) return new Response("Missing OPENROUTER_API_KEY", { status: 500 });
+
+        const [{ generateText, tool, stepCountIs }, { z }, { createOpenRouterProvider, OPENROUTER_MODEL }] =
+          await Promise.all([
+            import("ai"),
+            import("zod"),
+            import("@/lib/ai-gateway.server"),
+          ]);
 
         const openrouter = createOpenRouterProvider(key);
         const model = openrouter(OPENROUTER_MODEL);

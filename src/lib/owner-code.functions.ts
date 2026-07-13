@@ -1,12 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { createHash, timingSafeEqual } from "node:crypto";
-
-function codeMatches(input: string, expected: string): boolean {
-  const a = createHash("sha256").update(input, "utf8").digest();
-  const b = createHash("sha256").update(expected, "utf8").digest();
-  return timingSafeEqual(a, b);
-}
 
 /**
  * Verifies the owner access code (checked against OWNER_ACCESS_CODE env var).
@@ -19,6 +12,13 @@ export const redeemOwnerCode = createServerFn({ method: "POST" })
     z.object({ code: z.string().min(1).max(200) }).parse(d),
   )
   .handler(async ({ data }) => {
+    const { createHash, timingSafeEqual } = await import("node:crypto");
+    const codeMatches = (input: string, expected: string): boolean => {
+      const a = createHash("sha256").update(input, "utf8").digest();
+      const b = createHash("sha256").update(expected, "utf8").digest();
+      return timingSafeEqual(a, b);
+    };
+
     const expected = process.env.OWNER_ACCESS_CODE;
     const ownerEmail = process.env.OWNER_EMAIL;
     const ownerPassword = process.env.OWNER_ACCOUNT_PASSWORD;
