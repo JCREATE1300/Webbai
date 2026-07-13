@@ -40,6 +40,10 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": false,
       "artifactName": "webbai-setup-${version}.exe"
+    },
+    "publish": {
+      "provider": "generic",
+      "url": ""
     }
   }
 }
