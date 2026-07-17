@@ -78,15 +78,34 @@ function AuthPage() {
 
 
   const google = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error(result.error.message);
-      return;
+    // Check if running in Electron
+    const isElectron = typeof window !== 'undefined' && window.electron;
+    
+    if (isElectron) {
+      // In Electron, open OAuth in browser
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error(result.error.message);
+        return;
+      }
+      if (result.redirected) {
+        // Redirect happened in browser, now redirect back to app when callback comes
+        return;
+      }
+    } else {
+      // Web version, use default behavior
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error(result.error.message);
+        return;
+      }
+      if (result.redirected) return;
+      navigate({ to: "/chat" });
     }
-    if (result.redirected) return;
-    navigate({ to: "/chat" });
   };
 
   return (
