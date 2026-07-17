@@ -25,4 +25,4 @@ export function createOpenRouterProvider(apiKey: string) {
 
 // Best-in-class free model on OpenRouter (strong reasoning + tool calling).
 // If OpenRouter rate-limits or deprecates it, swap for another ":free" model.
-export const OPENROUTER_MODEL = "deepseek/deepseek-chat-v3.1:free";
+export const OPENROUTER_MODEL = "openai/gpt-oss-120b:free";
