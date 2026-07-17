@@ -9,6 +9,11 @@ contextBridge.exposeInMainWorld('__webbai', {
   getApiBase: () => ipcRenderer.invoke('webbai:api-base'),
 });
 
+// Expose electron flag to indicate running in Electron
+contextBridge.exposeInMainWorld('electron', {
+  isElectron: true,
+});
+
 function injectOverlay() {
   if (document.getElementById('__webbai_root')) return;
   const host = document.createElement('div');
@@ -176,7 +181,7 @@ function snapshotPage() {
     const key = selector + '|' + text;
     if (seen.has(key)) return null;
     seen.add(key);
-    return `${tag}${type ? '['+type+']' : ''} selector=${JSON.stringify(selector)} ${aria ? 'aria='+JSON.stringify(aria)+' ' : ''}${placeholder ? 'placeholder='+JSON.stringify(placeholder)+' ' : ''}text=${JSON.stringify(text)}`;
+    return `${tag}${type ? '['+type+']' : ''} selector=${JSON.stringify(selector)} ${aria ? 'aria='+JSON.stringify(aria)+' ' : ''}${placeholder ? 'placeholder='+JSON.stringify(placeholder)+' ' : ''}${text ? 'text='+JSON.stringify(text) : ''}`;
   };
 
   const nodes = document.querySelectorAll('a, button, input, textarea, select, [role="button"], [role="link"]');
