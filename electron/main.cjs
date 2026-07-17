@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 
 const APP_URL = 'https://webbai.lovable.app';
@@ -30,6 +31,9 @@ function createMainWindow() {
     shell.openExternal(url);
     return { action: 'deny' };
   });
+
+  // Setup auto-updater events
+  setupAutoUpdater();
 }
 
 function openAssistantWindow(targetUrl) {
@@ -46,6 +50,34 @@ function openAssistantWindow(targetUrl) {
     },
   });
   win.loadURL(targetUrl);
+}
+
+function setupAutoUpdater() {
+  // Configure auto-updater (logs are helpful for debugging)
+  autoUpdater.logger = require('electron-log');
+  autoUpdater.logger.transports.file.level = 'info';
+
+  // Check for updates when app starts
+  autoUpdater.checkForUpdatesAndNotify();
+
+  // Listen for update events
+  autoUpdater.on('update-available', () => {
+    if (mainWindow) {
+      mainWindow.webContents.send('update-available');
+    }
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    if (mainWindow) {
+      mainWindow.webContents.send('update-downloaded');
+    }
+  });
+
+  autoUpdater.on('error', (err) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('update-error', err.message);
+    }
+  });
 }
 
 // ----- IPC: fetch supabase token from mainWindow's localStorage -----
@@ -75,6 +107,16 @@ ipcMain.handle('webbai:get-token', async () => {
 });
 
 ipcMain.handle('webbai:api-base', async () => API_BASE);
+
+// IPC for updates
+ipcMain.handle('update:restart', () => {
+  autoUpdater.quitAndInstall();
+});
+
+ipcMain.handle('update:check', async () => {
+  const result = await autoUpdater.checkForUpdates();
+  return result;
+});
 
 app.whenReady().then(createMainWindow);
 
