@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
 const path = require('path');
 
 const APP_URL = 'https://webbai.lovable.app';
@@ -11,7 +12,7 @@ function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 820,
-    title: 'webbai',
+    title: 'webbai v' + app.getVersion(),
     autoHideMenuBar: true,
     backgroundColor: '#0b0b0d',
     webPreferences: {
@@ -21,6 +22,19 @@ function createMainWindow() {
     },
   });
   mainWindow.loadURL(APP_URL);
+
+  // Display version in window
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.executeJavaScript(`
+      if (!document.getElementById('__webbai_version')) {
+        const versionEl = document.createElement('div');
+        versionEl.id = '__webbai_version';
+        versionEl.style.cssText = 'position: fixed; bottom: 10px; right: 10px; font-size: 11px; color: #888; z-index: 9999; font-family: monospace;';
+        versionEl.textContent = 'v${app.getVersion()}';
+        document.body.appendChild(versionEl);
+      }
+    `);
+  });
 
   // When the web app calls window.open(externalUrl), open it in an assistant window
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -53,8 +67,8 @@ function openAssistantWindow(targetUrl) {
 }
 
 function setupAutoUpdater() {
-  // Configure auto-updater (logs are helpful for debugging)
-  autoUpdater.logger = require('electron-log');
+  // Configure auto-updater
+  autoUpdater.logger = log;
   autoUpdater.logger.transports.file.level = 'info';
 
   // Check for updates when app starts
@@ -62,18 +76,21 @@ function setupAutoUpdater() {
 
   // Listen for update events
   autoUpdater.on('update-available', () => {
+    log.info('Update available');
     if (mainWindow) {
       mainWindow.webContents.send('update-available');
     }
   });
 
   autoUpdater.on('update-downloaded', () => {
+    log.info('Update downloaded');
     if (mainWindow) {
       mainWindow.webContents.send('update-downloaded');
     }
   });
 
   autoUpdater.on('error', (err) => {
+    log.error('Update error:', err);
     if (mainWindow) {
       mainWindow.webContents.send('update-error', err.message);
     }
