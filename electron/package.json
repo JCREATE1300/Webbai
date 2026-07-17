@@ -8,7 +8,11 @@
   "devDependencies": {
     "@electron/packager": "^20.0.2",
     "electron": "^43.1.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "electron-updater": "^6.1.8"
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.8"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -36,14 +40,17 @@
       ]
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": false,
-      "artifactName": "webbai-setup-${version}.exe"
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "webbai-setup-${version}.exe",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "publish": {
-      "provider": "generic",
-      "url": ""
+      "provider": "github",
+      "owner": "JCREATE1300",
+      "repo": "webbai"
     }
   }
 }
