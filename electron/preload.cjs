@@ -12,6 +12,13 @@ contextBridge.exposeInMainWorld('__webbai', {
 // Expose electron flag to indicate running in Electron
 contextBridge.exposeInMainWorld('electron', {
   isElectron: true,
+  
+  // Update APIs
+  onUpdateAvailable: (callback) => ipcRenderer.on('update-available', callback),
+  onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', callback),
+  onUpdateError: (callback) => ipcRenderer.on('update-error', (_, message) => callback(message)),
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  restartAndInstall: () => ipcRenderer.invoke('update:restart'),
 });
 
 function injectOverlay() {
@@ -181,7 +188,7 @@ function snapshotPage() {
     const key = selector + '|' + text;
     if (seen.has(key)) return null;
     seen.add(key);
-    return `${tag}${type ? '['+type+']' : ''} selector=${JSON.stringify(selector)} ${aria ? 'aria='+JSON.stringify(aria)+' ' : ''}${placeholder ? 'placeholder='+JSON.stringify(placeholder)+' ' : ''}${text ? 'text='+JSON.stringify(text) : ''}`;
+    return `${tag}${type ? '['+type+']' : ''} selector=${JSON.stringify(selector)} ${aria ? 'aria='+JSON.stringify(aria)+' ' : ''}${placeholder ? 'placeholder='+JSON.stringify(placeholder)+' ' : ''}text=${JSON.stringify(text)}`;
   };
 
   const nodes = document.querySelectorAll('a, button, input, textarea, select, [role="button"], [role="link"]');
