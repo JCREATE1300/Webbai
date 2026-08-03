@@ -131,7 +131,9 @@ function AuthPage() {
           <div className="w-14 h-14 rounded-2xl bg-primary text-primary-foreground grid place-items-center shadow-lg">
             <Bot className="w-7 h-7" />
           </div>
-          <h1 className="mt-4 text-2xl font-semibold">webbai</h1>
+          <h1 className="mt-4 text-2xl font-semibold text-center">
+            Sign in to webbai — AI chat and in-app browser
+          </h1>
           <p className="text-sm text-muted-foreground">Chat with AI. Open any website in-app.</p>
         </div>
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
