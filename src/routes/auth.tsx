@@ -9,10 +9,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Bot } from "lucide-react";
+import { getElectron } from '@/lib/electron';
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
-    meta: [{ title: "Sign in — webbai" }],
+    meta: [
+      { title: "Sign in — webbai" },
+      {
+        name: "description",
+        content:
+          "Sign in or create a free webbai account to chat with the AI browser assistant, open websites in-app and download the Windows build.",
+      },
+      { property: "og:title", content: "Sign in to webbai" },
+      {
+        property: "og:description",
+        content:
+          "Access your webbai threads, open any website inside the app and grab the Windows desktop build.",
+      },
+      { property: "og:url", content: "https://webbai.lovable.app/auth" },
+    ],
+    links: [{ rel: "canonical", href: "https://webbai.lovable.app/auth" }],
   }),
   component: AuthPage,
 });
@@ -79,7 +95,7 @@ function AuthPage() {
 
   const google = async () => {
     // Check if running in Electron
-    const isElectron = typeof window !== 'undefined' && window.electron;
+    const isElectron = typeof window !== 'undefined' && Boolean(getElectron());
     
     if (isElectron) {
       // In Electron, open OAuth in browser
@@ -115,7 +131,9 @@ function AuthPage() {
           <div className="w-14 h-14 rounded-2xl bg-primary text-primary-foreground grid place-items-center shadow-lg">
             <Bot className="w-7 h-7" />
           </div>
-          <h1 className="mt-4 text-2xl font-semibold">webbai</h1>
+          <h1 className="mt-4 text-2xl font-semibold text-center">
+            Sign in to webbai — AI chat and in-app browser
+          </h1>
           <p className="text-sm text-muted-foreground">Chat with AI. Open any website in-app.</p>
         </div>
         <div className="rounded-2xl border bg-card p-6 shadow-sm">

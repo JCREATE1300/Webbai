@@ -7,7 +7,24 @@ import { Shield, ArrowLeft, Users, MessagesSquare, MessageSquare } from "lucide-
 import { isRedirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/owner")({
-  head: () => ({ meta: [{ title: "Owner Panel — webbai" }] }),
+  head: () => ({
+    meta: [
+      { title: "Owner Panel — webbai" },
+      {
+        name: "description",
+        content:
+          "Private webbai owner panel with account totals, thread and message counts, and the list of registered users.",
+      },
+      { property: "og:title", content: "webbai Owner Panel" },
+      {
+        property: "og:description",
+        content: "Owner-only dashboard for webbai usage stats and registered users.",
+      },
+      { property: "og:url", content: "https://webbai.lovable.app/owner" },
+      { name: "robots", content: "noindex" },
+    ],
+    links: [{ rel: "canonical", href: "https://webbai.lovable.app/owner" }],
+  }),
   beforeLoad: async () => {
     try {
       const role = await getMyRole();
