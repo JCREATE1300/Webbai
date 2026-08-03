@@ -387,6 +387,7 @@ function ChatThread() {
               variant="ghost"
               className="h-8 w-8"
               title="Open in system browser"
+              aria-label="Open in system browser"
               onClick={() => window.open(openedUrl, "_blank", "noopener,noreferrer")}
             >
               <ExternalLink className="w-4 h-4" />
@@ -396,6 +397,7 @@ function ChatThread() {
               variant="ghost"
               className="h-8 w-8"
               title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
               onClick={() => setIsFullscreen((v) => !v)}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -404,7 +406,8 @@ function ChatThread() {
               size="icon"
               variant="ghost"
               className="h-8 w-8"
-              title="Close"
+              title="Close browser panel"
+              aria-label="Close browser panel"
               onClick={() => {
                 setOpenedUrl(null);
                 setIsFullscreen(false);
