@@ -13,7 +13,22 @@ import { getElectron } from '@/lib/electron';
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
-    meta: [{ title: "Sign in — webbai" }],
+    meta: [
+      { title: "Sign in — webbai" },
+      {
+        name: "description",
+        content:
+          "Sign in or create a free webbai account to chat with the AI browser assistant, open websites in-app and download the Windows build.",
+      },
+      { property: "og:title", content: "Sign in to webbai" },
+      {
+        property: "og:description",
+        content:
+          "Access your webbai threads, open any website inside the app and grab the Windows desktop build.",
+      },
+      { property: "og:url", content: "https://webbai.lovable.app/auth" },
+    ],
+    links: [{ rel: "canonical", href: "https://webbai.lovable.app/auth" }],
   }),
   component: AuthPage,
 });
