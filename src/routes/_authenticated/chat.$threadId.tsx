@@ -45,8 +45,28 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/chat/$threadId")({
-  head: () => ({
-    meta: [{ title: "webbai" }],
+  head: ({ params }) => ({
+    meta: [
+      { title: "Chat — webbai" },
+      {
+        name: "description",
+        content:
+          "Your private webbai conversation: ask questions and open websites in the in-app browser panel beside the chat.",
+      },
+      { property: "og:title", content: "Chat — webbai" },
+      {
+        property: "og:description",
+        content: "A webbai thread with AI chat and an in-app browser panel.",
+      },
+      {
+        property: "og:url",
+        content: `https://webbai.lovable.app/chat/${params.threadId}`,
+      },
+      { name: "robots", content: "noindex" },
+    ],
+    links: [
+      { rel: "canonical", href: `https://webbai.lovable.app/chat/${params.threadId}` },
+    ],
   }),
   component: ChatThread,
 });
