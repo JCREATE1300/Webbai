@@ -79,7 +79,7 @@ function AuthPage() {
 
   const google = async () => {
     // Check if running in Electron
-    const isElectron = typeof window !== 'undefined' && window.electron;
+    const isElectron = typeof window !== 'undefined' && Boolean(getElectron());
     
     if (isElectron) {
       // In Electron, open OAuth in browser

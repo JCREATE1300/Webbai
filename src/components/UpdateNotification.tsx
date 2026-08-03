@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Download, RotateCcw } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getElectron } from '@/lib/electron';
 
 export function UpdateNotification() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -14,18 +15,18 @@ export function UpdateNotification() {
     if (!getElectron()) return;
 
     // Listen for update events
-    getElectron().onUpdateAvailable(() => {
+    getElectron()?.onUpdateAvailable(() => {
       setUpdateAvailable(true);
       setError(null);
     });
 
-    getElectron().onUpdateDownloaded(() => {
+    getElectron()?.onUpdateDownloaded(() => {
       setUpdateDownloaded(true);
       setUpdateAvailable(false);
       setError(null);
     });
 
-    getElectron().onUpdateError((message: string) => {
+    getElectron()?.onUpdateError((message: string) => {
       setError(message);
       setUpdateAvailable(false);
     });
@@ -39,7 +40,7 @@ export function UpdateNotification() {
     
     setChecking(true);
     try {
-      await getElectron().checkForUpdates();
+      await getElectron()?.checkForUpdates();
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to check for updates');
@@ -50,7 +51,7 @@ export function UpdateNotification() {
 
   const handleRestartAndInstall = () => {
     if (!getElectron()) return;
-    getElectron().restartAndInstall();
+    getElectron()?.restartAndInstall();
   };
 
   if (!getElectron()) return null;
