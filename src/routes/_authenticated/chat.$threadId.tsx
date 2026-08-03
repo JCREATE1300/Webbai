@@ -207,7 +207,11 @@ function ChatThread() {
   return (
     <div className="h-screen flex bg-background text-foreground overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground flex flex-col">
+      <aside
+        aria-labelledby="threads-heading"
+        className="w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground flex flex-col"
+      >
+        <h2 id="threads-heading" className="sr-only">Your chat threads</h2>
         <div className="p-4 flex items-center gap-2 border-b border-sidebar-border">
           <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground grid place-items-center">
             <Bot className="w-4 h-4" />
@@ -263,7 +267,8 @@ function ChatThread() {
       </aside>
 
       {/* Chat pane */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main aria-labelledby="chat-heading" className="flex-1 flex flex-col min-w-0">
+        <h2 id="chat-heading" className="sr-only">Conversation with the webbai assistant</h2>
         <Conversation className="flex-1">
           <ConversationContent>
             {(messages.length === 0 && !msgsLoading) && (
@@ -376,6 +381,7 @@ function ChatThread() {
               : "w-[46%] shrink-0 border-l bg-background flex flex-col"
           }
         >
+          <h2 className="sr-only">In-app browser</h2>
           <div className="h-11 shrink-0 flex items-center gap-2 px-3 border-b bg-muted/40">
             <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
             <div className="flex-1 min-w-0">
