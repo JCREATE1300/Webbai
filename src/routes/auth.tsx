@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Bot } from "lucide-react";
+import { getElectron } from '@/lib/electron';
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
