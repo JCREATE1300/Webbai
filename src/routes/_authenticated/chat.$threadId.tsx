@@ -213,9 +213,7 @@ function ChatThread() {
       >
         <h2 id="threads-heading" className="sr-only">Your chat threads</h2>
         <div className="p-4 flex items-center gap-2 border-b border-sidebar-border">
-          <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground grid place-items-center">
-            <Bot className="w-4 h-4" />
-          </div>
+          <WebbaiMark size={32} />
           <div className="font-semibold text-sm">webbai</div>
         </div>
         <div className="p-3">
