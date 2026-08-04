@@ -23,18 +23,17 @@ export const Route = createFileRoute("/api/browser-agent")({
         const task = (body.task ?? "").trim();
         if (!task) return new Response("task required", { status: 400 });
 
-        const key = process.env.OPENROUTER_API_KEY;
-        if (!key) return new Response("Missing OPENROUTER_API_KEY", { status: 500 });
-
-        const [{ generateText, tool, stepCountIs }, { z }, { createOpenRouterProvider, OPENROUTER_MODEL }] =
+        const [{ generateText, tool, stepCountIs }, { z }, gateway] =
           await Promise.all([
             import("ai"),
             import("zod"),
             import("@/lib/ai-gateway.server"),
           ]);
 
-        const openrouter = createOpenRouterProvider(key);
-        const model = openrouter(OPENROUTER_MODEL);
+        const { createOpenRouterProvider, OPENROUTER_MODEL, withOpenRouterFallback, getOpenRouterKeys } = gateway;
+        if (getOpenRouterKeys().length === 0) {
+          return new Response("Missing OPENROUTER_API_KEY", { status: 500 });
+        }
 
         const actions: Action[] = [];
         const push = (a: Action) => {
@@ -47,7 +46,12 @@ export const Route = createFileRoute("/api/browser-agent")({
           .map((h) => `${h.role.toUpperCase()}: ${h.text}`)
           .join("\n");
 
-        const result = await generateText({
+        const result = await withOpenRouterFallback(async (key) => {
+          actions.length = 0;
+          const model = createOpenRouterProvider(key)(OPENROUTER_MODEL);
+          return generateText({
+          model,
+
           model,
           stopWhen: stepCountIs(50),
           system: `You are an in-page browser assistant. You control the current webpage by calling tools.
