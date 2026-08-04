@@ -16,7 +16,6 @@ A desktop application that brings AI-powered assistance directly to your browser
 - 🔄 **Auto-Updates** - Get the latest version without reinstalling
 - 🔐 **Secure Authentication** - Integrates with Supabase for secure login
 
-> Note: In this alpha desktop build the floating in-page assistant UI is disabled and the app does NOT perform direct DOM actions (clicking, typing or submitting forms) on websites for you. The assistant can open pages and provide instructions or suggestions, but automated clicks/typing are experimental and unavailable in this release.
 
 ## Installation
 
