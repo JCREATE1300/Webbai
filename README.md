@@ -1,6 +1,6 @@
 # webbai - Desktop AI Assistant
 
-A desktop application that brings AI-powered assistance directly to your browser. Chat with an AI assistant and let it help you interact with any webpage.
+A desktop application that brings AI-powered assistance directly to your browser. Chat with an AI assistant and let it help you interact with webpages by opening them in an in-app browser and providing guidance.
 
 **Current Version:** v 1.0.0 alpha
 
@@ -10,12 +10,13 @@ A desktop application that brings AI-powered assistance directly to your browser
 
 ## Features
 
-- 🤖 **In-Window AI Assistant** - Floating panel with AI chat on any webpage (disabled by default in the alpha desktop build)
-- 🎯 **Browser Automation** - Let AI click, type, and navigate for you
+- 🤖 **AI Chat** - Chat with an assistant next to an in-app browser
+- 🌐 **Open websites in-app** - Load pages inside the desktop app for easier viewing
 - 📱 **Desktop App** - Built with Electron for seamless Windows integration
 - 🔄 **Auto-Updates** - Get the latest version without reinstalling
 - 🔐 **Secure Authentication** - Integrates with Supabase for secure login
-- 💬 **Real-time AI** - Powered by DeepSeek V3.1 AI model
+
+> Note: In this alpha desktop build the floating in-page assistant UI is disabled and the app does NOT perform direct DOM actions (clicking, typing or submitting forms) on websites for you. The assistant can open pages and provide instructions or suggestions, but automated clicks/typing are experimental and unavailable in this release.
 
 ## Installation
 
@@ -40,26 +41,18 @@ Get the latest Windows installer from [GitHub Releases](https://github.com/JCREA
 ### Starting the App
 
 1. Launch webbai from your Windows Start Menu
-2. The desktop app can open websites inside the app. In the alpha desktop build the floating assistant panel is disabled by default; use the in-app browser panel and chat UI instead.
+2. Open any website in the in-app browser panel and use the chat panel to ask questions or request summaries
 
-### Using the Assistant
+### What the assistant can do in this build
 
-**Ask the AI to interact with pages:**
-- "Search for cats on this website"
-- "Click the sign in button"
-- "Fill out this form with my contact info"
-- "Scroll down and find the pricing section"
+- Summarise page content
+- Extract key information (headings, links, contact info)
+- Suggest navigation steps or fields to fill
+- Open and display websites inside the app
 
-The AI will:
-1. Understand your request
-2. Perform actions on the webpage
-3. Report back with results
+### What the assistant cannot do in this build
 
-### Available Commands
-
-- **Chat** - Type your request and press Enter or click "Go"
-- **Clear** - Close the panel and start fresh
-- **Navigate** - AI can follow links and navigate between pages
+- Perform direct in-page interactions such as clicking buttons, filling fields, or submitting forms. Those features are experimental and disabled in this alpha desktop release.
 
 ## Updates
 
@@ -146,11 +139,9 @@ webbai/
 
 ### Building a Release
 
-1. Update version in `electron/package.json` (already set to 1.0.0-alpha)
-2. Commit changes
-3. Tag the commit: `git tag v1.0.0-alpha`
-4. Push tag: `git push origin v1.0.0-alpha`
-5. GitHub Actions automatically builds and releases the installer (or create a release on GitHub)
+1. Ensure `electron/package.json` version is correct (currently 1.0.0-alpha)
+2. Commit any changes
+3. Create an annotated tag locally and push it (see commands below)
 
 ## Architecture
 
@@ -175,14 +166,6 @@ Main Process (Electron)
 External API / Filesystem
 ```
 
-## Browser Compatibility
-
-webbai works on any website accessible through the Electron browser. It injects a floating panel that:
-
-- Monitors page structure
-- Intercepts user interactions
-- Executes AI-directed actions
-
 ## Privacy & Security
 
 - ✅ All authentication handled through Supabase
@@ -199,33 +182,17 @@ Found a bug? Have a feature request?
 3. Include your version number (shown in app corner)
 4. Describe steps to reproduce
 
-## Roadmap
-
-- [ ] macOS support
-- [ ] Linux support
-- [ ] Custom AI model selection
-- [ ] Advanced task scheduling
-- [ ] Team collaboration features
-
-## License
-
-ISC License - See LICENSE file for details
-
 ## Version History
 
 ### v 1.0.0 alpha (Current)
 - 🚀 Initial alpha release
-- ⚠️ Experimental: floating in-page assistant disabled by default in this build
+- ⚠️ Experimental: floating in-page assistant and direct DOM actions are disabled in this build
 
 ### v1.1.1
 - ✨ Auto-update system - Update without reinstalling
 - ✨ Version display in window title and corner
 - 🐛 Fixed auto-updater configuration
 - 📦 Added electron-log for better debugging
-
-### v1.1.0
-- 🎨 Improved UI/UX
-- 🔧 Fixed build issues
 
 ---
 
