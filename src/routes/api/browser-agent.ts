@@ -109,7 +109,9 @@ Plan and execute. Call \`done\` when finished.`,
               execute: async (i) => push({ type: "done", ...i }),
             }),
           },
+          });
         });
+
 
         return Response.json({ actions, summary: result.text });
       },
