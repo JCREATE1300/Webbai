@@ -142,3 +142,44 @@
     color: var(--color-foreground);
   }
 }
+
+@keyframes webbai-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes webbai-spin-rev {
+  to { transform: rotate(-360deg); }
+}
+@keyframes webbai-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.7); opacity: 0.65; }
+}
+@keyframes webbai-glow {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-primary) 40%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-primary) 0%, transparent); }
+}
+
+.webbai-mark-glow {
+  animation: webbai-glow 1.8s ease-out infinite;
+}
+.webbai-orbit-a {
+  animation: webbai-spin 3s linear infinite;
+}
+.webbai-orbit-b {
+  animation: webbai-spin-rev 4.2s linear infinite;
+}
+.webbai-orbit-c {
+  animation: webbai-spin 5.4s linear infinite;
+}
+.webbai-nucleus {
+  animation: webbai-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .webbai-mark-glow,
+  .webbai-orbit-a,
+  .webbai-orbit-b,
+  .webbai-orbit-c,
+  .webbai-nucleus {
+    animation: none;
+  }
+}
