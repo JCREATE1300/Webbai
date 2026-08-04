@@ -52,7 +52,6 @@ export const Route = createFileRoute("/api/browser-agent")({
           return generateText({
           model,
 
-          model,
           stopWhen: stepCountIs(50),
           system: `You are an in-page browser assistant. You control the current webpage by calling tools.
 - Use short, safe CSS selectors from the provided page state (prefer #id, [name=...], or aria-label).
