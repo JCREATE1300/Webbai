@@ -2,15 +2,15 @@
 
 A desktop application that brings AI-powered assistance directly to your browser. Chat with an AI assistant and let it help you interact with any webpage.
 
-**Current Version:** v1.1.1
+**Current Version:** v 1.0.0 alpha
 
-![Version](https://img.shields.io/badge/version-1.1.1-blue)
+![Version](https://img.shields.io/badge/version-1.0.0--alpha-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-0078d4)
 ![License](https://img.shields.io/badge/license-ISC-green)
 
 ## Features
 
-- 🤖 **In-Window AI Assistant** - Floating panel with AI chat on any webpage
+- 🤖 **In-Window AI Assistant** - Floating panel with AI chat on any webpage (disabled by default in the alpha desktop build)
 - 🎯 **Browser Automation** - Let AI click, type, and navigate for you
 - 📱 **Desktop App** - Built with Electron for seamless Windows integration
 - 🔄 **Auto-Updates** - Get the latest version without reinstalling
@@ -23,7 +23,7 @@ A desktop application that brings AI-powered assistance directly to your browser
 
 Get the latest Windows installer from [GitHub Releases](https://github.com/JCREATE1300/webbai/releases):
 
-1. Download `webbai-setup-1.1.1.exe`
+1. Download `webbai-setup-1.0.0-alpha.exe`
 2. Run the installer
 3. Launch webbai from your Start Menu or desktop shortcut
 4. Sign in with your credentials
@@ -40,8 +40,7 @@ Get the latest Windows installer from [GitHub Releases](https://github.com/JCREA
 ### Starting the App
 
 1. Launch webbai from your Windows Start Menu
-2. You'll see the floating AI assistant icon (✦) in the bottom-right corner
-3. Click the icon to open the chat panel
+2. The desktop app can open websites inside the app. In the alpha desktop build the floating assistant panel is disabled by default; use the in-app browser panel and chat UI instead.
 
 ### Using the Assistant
 
@@ -147,11 +146,11 @@ webbai/
 
 ### Building a Release
 
-1. Update version in `electron/package.json`
+1. Update version in `electron/package.json` (already set to 1.0.0-alpha)
 2. Commit changes
-3. Tag the commit: `git tag v1.1.1`
-4. Push tag: `git push origin v1.1.1`
-5. GitHub Actions automatically builds and releases the installer
+3. Tag the commit: `git tag v1.0.0-alpha`
+4. Push tag: `git push origin v1.0.0-alpha`
+5. GitHub Actions automatically builds and releases the installer (or create a release on GitHub)
 
 ## Architecture
 
@@ -214,7 +213,11 @@ ISC License - See LICENSE file for details
 
 ## Version History
 
-### v1.1.1 (Current)
+### v 1.0.0 alpha (Current)
+- 🚀 Initial alpha release
+- ⚠️ Experimental: floating in-page assistant disabled by default in this build
+
+### v1.1.1
 - ✨ Auto-update system - Update without reinstalling
 - ✨ Version display in window title and corner
 - 🐛 Fixed auto-updater configuration
@@ -223,9 +226,6 @@ ISC License - See LICENSE file for details
 ### v1.1.0
 - 🎨 Improved UI/UX
 - 🔧 Fixed build issues
-
-### v1.0.0
-- 🚀 Initial release
 
 ---
 
