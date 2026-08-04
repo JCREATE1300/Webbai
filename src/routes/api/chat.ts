@@ -12,19 +12,21 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("Messages required", { status: 400 });
         }
 
-        const key = process.env.OPENROUTER_API_KEY;
-        if (!key) return new Response("Missing OPENROUTER_API_KEY", { status: 500 });
-
         const authHeader = request.headers.get("authorization");
-        const [{ convertToModelMessages, streamText, tool, stepCountIs }, { z }, { createOpenRouterProvider, OPENROUTER_MODEL }] =
+        const [{ convertToModelMessages, streamText, tool, stepCountIs }, { z }, gateway] =
           await Promise.all([
             import("ai"),
             import("zod"),
             import("@/lib/ai-gateway.server"),
           ]);
 
+        const { createOpenRouterProvider, OPENROUTER_MODEL, pickOpenRouterKey } = gateway;
+        const key = await pickOpenRouterKey();
+        if (!key) return new Response("Missing OPENROUTER_API_KEY", { status: 500 });
+
         const openrouter = createOpenRouterProvider(key);
         const model = openrouter(OPENROUTER_MODEL);
+
         const threadId = body.threadId;
 
         const messages = body.messages as UIMessage[];
