@@ -27,6 +27,7 @@ import {
   PromptInputSubmit,
   PromptInputFooter,
 } from "@/components/ai-elements/prompt-input";
+import { WebbaiMark } from "@/components/WebbaiMark";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import {
   Bot,
