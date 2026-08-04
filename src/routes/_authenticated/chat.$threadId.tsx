@@ -30,7 +30,6 @@ import {
 import { WebbaiMark } from "@/components/WebbaiMark";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import {
-  Bot,
   Plus,
   Trash2,
   LogOut,
