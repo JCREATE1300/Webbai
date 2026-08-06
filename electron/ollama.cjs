@@ -115,15 +115,16 @@ async function status() {
   const models = running ? await installedModels() : [];
   const settings = readSettings();
   const selected = settings.model || null;
-  const has = (id) => models.some((m) => m === id || m.startsWith(`${id.split(':')[0]}:`) === false ? m === id : m === id);
+  const installed = (id) => models.some((m) => m === id || m === `${id}:latest`);
   return {
     runtimeInstalled: Boolean(bundledBinary()) || running,
     running,
     models,
     catalog: MODELS,
     selectedModel: selected,
-    ready: Boolean(running && selected && models.includes(selected)) || Boolean(running && selected && has(selected)),
+    ready: Boolean(running && selected && installed(selected)),
   };
+
 }
 
 function setModel(id) {
