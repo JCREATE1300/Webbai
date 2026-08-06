@@ -11,14 +11,34 @@ contextBridge.exposeInMainWorld('__webbai', {
 // Expose electron flag to indicate running in Electron
 contextBridge.exposeInMainWorld('electron', {
   isElectron: true,
-  
+
   // Update APIs
   onUpdateAvailable: (callback) => ipcRenderer.on('update-available', callback),
   onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', callback),
   onUpdateError: (callback) => ipcRenderer.on('update-error', (_, message) => callback(message)),
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
   restartAndInstall: () => ipcRenderer.invoke('update:restart'),
+
+  // Local Gemma 4 runtime
+  local: {
+    status: () => ipcRenderer.invoke('local:status'),
+    catalog: () => ipcRenderer.invoke('local:catalog'),
+    setModel: (id) => ipcRenderer.invoke('local:set-model', id),
+    pull: (id) => ipcRenderer.invoke('local:pull', id),
+    onPullProgress: (cb) => {
+      const handler = (_e, payload) => cb(payload);
+      ipcRenderer.on('local:pull-progress', handler);
+      return () => ipcRenderer.removeListener('local:pull-progress', handler);
+    },
+    chat: (payload) => ipcRenderer.invoke('local:chat', payload),
+    onChatChunk: (cb) => {
+      const handler = (_e, payload) => cb(payload);
+      ipcRenderer.on('local:chat-chunk', handler);
+      return () => ipcRenderer.removeListener('local:chat-chunk', handler);
+    },
+  },
 });
+
 
 function injectOverlay() {
   // Floating in-page assistant disabled per project update.
