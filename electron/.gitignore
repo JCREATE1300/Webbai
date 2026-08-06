@@ -1,0 +1,2 @@
+vendor/ollama/*
+!vendor/ollama/README.md
