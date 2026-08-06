@@ -111,14 +111,46 @@ function ChatThread() {
     },
   });
 
+  // Local Gemma 4 (desktop app) — preferred whenever it's installed & ready.
+  const localBridge = getLocalBridge();
+  const [localReady, setLocalReady] = useState(false);
+  const [localModel, setLocalModel] = useState<string | null>(null);
+  const [setupOpen, setSetupOpen] = useState(false);
+  useEffect(() => {
+    if (!localBridge) return;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const s = await localBridge.status();
+        if (cancelled) return;
+        setLocalReady(s.ready);
+        setLocalModel(s.selectedModel);
+      } catch {
+        /* ignore */
+      }
+    };
+    void check();
+    const t = setInterval(check, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [localBridge]);
+
   const transport = useMemo(
     () =>
-      new DefaultChatTransport({
-        api: "/api/chat",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: { threadId },
-      }),
-    [token, threadId],
+      localReady
+        ? new DefaultChatTransport({
+            api: "/local-chat",
+            fetch: createLocalChatFetch(),
+            body: { threadId },
+          })
+        : new DefaultChatTransport({
+            api: "/api/chat",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: { threadId },
+          }),
+    [token, threadId, localReady],
   );
 
   const { messages, sendMessage, status } = useChat({
@@ -130,6 +162,7 @@ function ChatThread() {
       qc.invalidateQueries({ queryKey: ["threads"] });
     },
   });
+
 
   // Embedded in-app browser panel
   const [openedUrl, setOpenedUrl] = useState<string | null>(null);
