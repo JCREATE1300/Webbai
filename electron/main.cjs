@@ -2,9 +2,11 @@ const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 const path = require('path');
+const ollama = require('./ollama.cjs');
 
 const APP_URL = 'https://webbai.lovable.app';
 const API_BASE = 'https://webbai.lovable.app';
+
 
 let mainWindow = null;
 
