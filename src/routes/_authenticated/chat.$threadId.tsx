@@ -136,6 +136,12 @@ function ChatThread() {
         if (cancelled) return;
         setLocalReady(s.ready);
         setLocalModel(s.selectedModel);
+        // First launch of the desktop app: prompt the model-size choice.
+        if (!s.selectedModel && !promptedRef.current) {
+          promptedRef.current = true;
+          setSetupOpen(true);
+        }
+
       } catch {
         /* ignore */
       }
