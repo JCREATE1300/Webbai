@@ -298,6 +298,19 @@ function ChatThread() {
               </Button>
             </Link>
           )}
+          {localBridge && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => setSetupOpen(true)}
+            >
+              <Cpu className="w-4 h-4" />
+              <span className="truncate">
+                {localReady ? `Local: ${localModel}` : "Set up local model"}
+              </span>
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="w-full justify-start" onClick={downloadWindows}>
             <Download className="w-4 h-4" /> Download for Windows
           </Button>
@@ -306,6 +319,16 @@ function ChatThread() {
           </Button>
         </div>
       </aside>
+
+      <Dialog open={setupOpen} onOpenChange={setSetupOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Local Gemma 4</DialogTitle>
+          </DialogHeader>
+          <LocalModelSetup onReady={() => setLocalReady(true)} />
+        </DialogContent>
+      </Dialog>
+
 
       {/* Chat pane */}
       <main aria-labelledby="chat-heading" className="flex-1 flex flex-col min-w-0">
