@@ -14,6 +14,16 @@ import {
 } from "@/lib/threads.functions";
 import { getMyRole } from "@/lib/owner.functions";
 import { getWindowsDownloadUrl } from "@/lib/downloads.functions";
+import { getLocalBridge } from "@/lib/electron";
+import { createLocalChatFetch } from "@/lib/local-chat";
+import { LocalModelSetup } from "@/components/LocalModelSetup";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
 import {
   Conversation,
