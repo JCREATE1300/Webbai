@@ -16,7 +16,8 @@ export function WebbaiMark({ size = 32, animated = false, className }: Props) {
   return (
     <span
       className={cn(
-        "inline-grid place-items-center rounded-full bg-sidebar-accent text-primary shrink-0 overflow-hidden",
+        "relative inline-grid place-items-center rounded-full bg-sidebar-accent text-primary shrink-0",
+        !animated && "shadow-md shadow-primary/20",
         animated && "webbai-mark-glow",
         className,
       )}
