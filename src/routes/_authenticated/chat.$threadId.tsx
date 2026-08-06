@@ -126,7 +126,9 @@ function ChatThread() {
   const localBridge = getLocalBridge();
   const [localReady, setLocalReady] = useState(false);
   const [localModel, setLocalModel] = useState<string | null>(null);
+  const promptedRef = useRef(false);
   const [setupOpen, setSetupOpen] = useState(false);
+
   useEffect(() => {
     if (!localBridge) return;
     let cancelled = false;
