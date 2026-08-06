@@ -51,6 +51,7 @@ import {
   Maximize2,
   Minimize2,
   ExternalLink,
+  Cpu,
 } from "lucide-react";
 import { toast } from "sonner";
 
