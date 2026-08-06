@@ -14,6 +14,16 @@ import {
 } from "@/lib/threads.functions";
 import { getMyRole } from "@/lib/owner.functions";
 import { getWindowsDownloadUrl } from "@/lib/downloads.functions";
+import { getLocalBridge } from "@/lib/electron";
+import { createLocalChatFetch } from "@/lib/local-chat";
+import { LocalModelSetup } from "@/components/LocalModelSetup";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
 import {
   Conversation,
@@ -41,6 +51,7 @@ import {
   Maximize2,
   Minimize2,
   ExternalLink,
+  Cpu,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -111,14 +122,54 @@ function ChatThread() {
     },
   });
 
+  // Local Gemma 4 (desktop app) — preferred whenever it's installed & ready.
+  const localBridge = getLocalBridge();
+  const [localReady, setLocalReady] = useState(false);
+  const [localModel, setLocalModel] = useState<string | null>(null);
+  const promptedRef = useRef(false);
+  const [setupOpen, setSetupOpen] = useState(false);
+
+  useEffect(() => {
+    if (!localBridge) return;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const s = await localBridge.status();
+        if (cancelled) return;
+        setLocalReady(s.ready);
+        setLocalModel(s.selectedModel);
+        // First launch of the desktop app: prompt the model-size choice.
+        if (!s.selectedModel && !promptedRef.current) {
+          promptedRef.current = true;
+          setSetupOpen(true);
+        }
+
+      } catch {
+        /* ignore */
+      }
+    };
+    void check();
+    const t = setInterval(check, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [localBridge]);
+
   const transport = useMemo(
     () =>
-      new DefaultChatTransport({
-        api: "/api/chat",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: { threadId },
-      }),
-    [token, threadId],
+      localReady
+        ? new DefaultChatTransport({
+            api: "/local-chat",
+            fetch: createLocalChatFetch(),
+            body: { threadId },
+          })
+        : new DefaultChatTransport({
+            api: "/api/chat",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: { threadId },
+          }),
+    [token, threadId, localReady],
   );
 
   const { messages, sendMessage, status } = useChat({
@@ -130,6 +181,7 @@ function ChatThread() {
       qc.invalidateQueries({ queryKey: ["threads"] });
     },
   });
+
 
   // Embedded in-app browser panel
   const [openedUrl, setOpenedUrl] = useState<string | null>(null);
@@ -255,6 +307,19 @@ function ChatThread() {
               </Button>
             </Link>
           )}
+          {localBridge && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => setSetupOpen(true)}
+            >
+              <Cpu className="w-4 h-4" />
+              <span className="truncate">
+                {localReady ? `Local: ${localModel}` : "Set up local model"}
+              </span>
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="w-full justify-start" onClick={downloadWindows}>
             <Download className="w-4 h-4" /> Download for Windows
           </Button>
@@ -263,6 +328,16 @@ function ChatThread() {
           </Button>
         </div>
       </aside>
+
+      <Dialog open={setupOpen} onOpenChange={setSetupOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Local Gemma 4</DialogTitle>
+          </DialogHeader>
+          <LocalModelSetup onReady={() => setLocalReady(true)} />
+        </DialogContent>
+      </Dialog>
+
 
       {/* Chat pane */}
       <main aria-labelledby="chat-heading" className="flex-1 flex flex-col min-w-0">

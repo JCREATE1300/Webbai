@@ -2,9 +2,11 @@ const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 const path = require('path');
+const ollama = require('./ollama.cjs');
 
 const APP_URL = 'https://webbai.lovable.app';
 const API_BASE = 'https://webbai.lovable.app';
+
 
 let mainWindow = null;
 
@@ -125,6 +127,46 @@ ipcMain.handle('webbai:get-token', async () => {
 
 ipcMain.handle('webbai:api-base', async () => API_BASE);
 
+// ----- IPC: local Gemma 4 runtime -----
+ipcMain.handle('local:status', async () => {
+  try {
+    await ollama.ensureServer();
+  } catch {
+    /* ignore */
+  }
+  return ollama.status();
+});
+
+ipcMain.handle('local:catalog', async () => ollama.MODELS);
+
+ipcMain.handle('local:set-model', async (_e, id) => ollama.setModel(id));
+
+ipcMain.handle('local:pull', async (event, id) => {
+  try {
+    await ollama.pullModel(id, (p) => {
+      event.sender.send('local:pull-progress', { id, ...p });
+    });
+    return { ok: true };
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    event.sender.send('local:pull-progress', { id, status: 'error', error: message });
+    return { ok: false, error: message };
+  }
+});
+
+ipcMain.handle('local:chat', async (event, { requestId, messages, tools }) => {
+  try {
+    await ollama.chat({ messages, tools }, (chunk) => {
+      event.sender.send('local:chat-chunk', { requestId, ...chunk });
+    });
+    return { ok: true };
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    event.sender.send('local:chat-chunk', { requestId, type: 'error', message });
+    return { ok: false, error: message };
+  }
+});
+
 // IPC for updates
 ipcMain.handle('update:restart', () => {
   autoUpdater.quitAndInstall();
@@ -135,12 +177,19 @@ ipcMain.handle('update:check', async () => {
   return result;
 });
 
-app.whenReady().then(createMainWindow);
+app.whenReady().then(() => {
+  createMainWindow();
+  ollama.ensureServer().catch(() => {});
+});
 
 app.on('window-all-closed', () => {
+  ollama.stopServer();
   if (process.platform !== 'darwin') app.quit();
 });
+
+app.on('before-quit', () => ollama.stopServer());
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
 });
+

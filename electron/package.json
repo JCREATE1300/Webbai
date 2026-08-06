@@ -2,7 +2,7 @@
   "name": "webbai",
   "productName": "webbai",
   "version": "1.0.0-alpha",
-  "description": "webbai desktop — chat + in-window AI page assistant",
+  "description": "webbai desktop \u2014 chat + in-window AI page assistant",
   "main": "main.cjs",
   "author": "webbai",
   "devDependencies": {
@@ -29,13 +29,16 @@
     "files": [
       "main.cjs",
       "preload.cjs",
+      "ollama.cjs",
       "package.json"
     ],
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -51,6 +54,15 @@
       "provider": "github",
       "owner": "JCREATE1300",
       "repo": "webbai"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "vendor/ollama",
+        "to": "ollama",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   }
 }

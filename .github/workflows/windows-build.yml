@@ -39,6 +39,16 @@ jobs:
         working-directory: electron
         run: npm install --no-save electron-builder@^25.0.0
 
+      - name: Bundle Ollama runtime (local Gemma 4)
+        shell: pwsh
+        working-directory: electron
+        run: |
+          New-Item -ItemType Directory -Force -Path vendor/ollama | Out-Null
+          Invoke-WebRequest -Uri "https://ollama.com/download/ollama-windows-amd64.zip" -OutFile ollama.zip
+          Expand-Archive -Path ollama.zip -DestinationPath vendor/ollama -Force
+          Remove-Item ollama.zip
+          Get-ChildItem vendor/ollama
+
       - name: Build Windows NSIS installer
         working-directory: electron
         env:
