@@ -8,7 +8,27 @@ const APP_URL = 'https://webbai.lovable.app';
 const API_BASE = 'https://webbai.lovable.app';
 
 
+const AUTH_HOST_PATTERNS = [
+  /(^|\.)accounts\.google\.com$/i,
+  /(^|\.)oauth\.lovable\.app$/i,
+  /(^|\.)lovable\.dev$/i,
+  /(^|\.)supabase\.co$/i,
+  /(^|\.)appleid\.apple\.com$/i,
+  /(^|\.)login\.microsoftonline\.com$/i,
+];
+
+function isAuthUrl(rawUrl) {
+  try {
+    const u = new URL(rawUrl);
+    if (u.origin === new URL(APP_URL).origin && u.pathname.startsWith('/~oauth')) return true;
+    return AUTH_HOST_PATTERNS.some((re) => re.test(u.hostname));
+  } catch {
+    return false;
+  }
+}
+
 let mainWindow = null;
+
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
