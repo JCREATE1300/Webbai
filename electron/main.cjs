@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, session } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 const path = require('path');
@@ -28,6 +28,31 @@ function isAuthUrl(rawUrl) {
 }
 
 let mainWindow = null;
+
+// Websites normally refuse to load inside an <iframe> (X-Frame-Options /
+// CSP frame-ancestors). In the desktop app we control the browser, so strip
+// those headers to make the in-app web view work like a real browser tab.
+function enableEmbeddedWebView() {
+  const filter = { urls: ['*://*/*'] };
+  session.defaultSession.webRequest.onHeadersReceived(filter, (details, callback) => {
+    const headers = details.responseHeaders || {};
+    for (const name of Object.keys(headers)) {
+      const lower = name.toLowerCase();
+      if (lower === 'x-frame-options') {
+        delete headers[name];
+      } else if (lower === 'content-security-policy' || lower === 'content-security-policy-report-only') {
+        const values = Array.isArray(headers[name]) ? headers[name] : [headers[name]];
+        headers[name] = values.map((v) =>
+          String(v)
+            .split(';')
+            .filter((d) => !/^\s*frame-ancestors/i.test(d))
+            .join(';'),
+        );
+      }
+    }
+    callback({ responseHeaders: headers });
+  });
+}
 
 
 function createMainWindow() {
