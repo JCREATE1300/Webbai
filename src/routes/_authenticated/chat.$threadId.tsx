@@ -210,13 +210,38 @@ function ChatThread() {
     }
   }, [messages]);
 
+  // Screen vision (desktop app only): attach a screenshot of what the user
+  // is looking at to every question.
+  const canSeeScreen = Boolean(getElectron()?.captureScreen);
+  const [seeScreen, setSeeScreen] = useState(true);
+  const [miniOpen, setMiniOpen] = useState(true);
+
+  const send = async (raw: string) => {
+    const text = raw.trim();
+    if (!text || status === "streaming" || status === "submitted") return;
+    if (canSeeScreen && seeScreen) {
+      const shot = await captureScreen();
+      if (shot) {
+        sendMessage({
+          parts: [
+            { type: "text", text },
+            { type: "file", mediaType: "image/png", filename: "screen.png", url: shot },
+          ],
+        } as any);
+        return;
+      }
+    }
+    sendMessage({ text });
+  };
+
   const [input, setInput] = useState("");
   const submit = () => {
     const text = input.trim();
-    if (!text || status === "streaming" || status === "submitted") return;
+    if (!text) return;
     setInput("");
-    sendMessage({ text });
+    void send(text);
   };
+
 
   const newChat = async () => {
     const t = await createFn();
