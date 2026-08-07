@@ -50,7 +50,9 @@ export const Route = createFileRoute("/api/chat")({
 
 You have a special tool called \`open_website\` that opens a URL inside an in-app browser panel next to the chat. Call it whenever the user asks you to open, show, visit, load, or pull up a website. Always pass a full https:// URL. After calling the tool, briefly tell the user what you opened.
 
-Format regular replies using Markdown.`,
+Format regular replies using Markdown.
+
+If the user's message includes a screenshot, it is a live capture of the screen they are looking at right now — read it and answer about what is visible.`,
           messages: await convertToModelMessages(messages),
           stopWhen: stepCountIs(5),
           tools: {
