@@ -62,12 +62,6 @@ function createMainWindow() {
     return { action: 'deny' };
   });
 
-  // Allow the main window to navigate through full-page OAuth redirects.
-  mainWindow.webContents.on('will-navigate', (_e, url) => {
-    if (!isAuthUrl(url) && !url.startsWith(APP_URL)) {
-      // leave normal in-app navigation alone
-    }
-  });
 
 
   // Setup auto-updater events
