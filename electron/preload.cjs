@@ -6,11 +6,15 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('__webbai', {
   getToken: () => ipcRenderer.invoke('webbai:get-token'),
   getApiBase: () => ipcRenderer.invoke('webbai:api-base'),
+  screenshot: () => ipcRenderer.invoke('webbai:screenshot'),
 });
 
 // Expose electron flag to indicate running in Electron
 contextBridge.exposeInMainWorld('electron', {
   isElectron: true,
+
+  // Screenshot of the window the user is currently looking at
+  captureScreen: () => ipcRenderer.invoke('webbai:screenshot'),
 
   // Update APIs
   onUpdateAvailable: (callback) => ipcRenderer.on('update-available', callback),
