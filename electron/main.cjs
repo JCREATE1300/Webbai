@@ -40,6 +40,20 @@ function createMainWindow() {
 
   // When the web app calls window.open(externalUrl), open it in an assistant window
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // Sign-in popups (Google / Lovable OAuth broker / Supabase auth) must stay
+    // real popups so window.opener + postMessage work and the session lands
+    // back in the app window.
+    if (isAuthUrl(url)) {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 520,
+          height: 720,
+          autoHideMenuBar: true,
+          webPreferences: { contextIsolation: true, nodeIntegration: false },
+        },
+      };
+    }
     if (url.startsWith('http')) {
       openAssistantWindow(url);
       return { action: 'deny' };
@@ -47,6 +61,14 @@ function createMainWindow() {
     shell.openExternal(url);
     return { action: 'deny' };
   });
+
+  // Allow the main window to navigate through full-page OAuth redirects.
+  mainWindow.webContents.on('will-navigate', (_e, url) => {
+    if (!isAuthUrl(url) && !url.startsWith(APP_URL)) {
+      // leave normal in-app navigation alone
+    }
+  });
+
 
   // Setup auto-updater events
   setupAutoUpdater();
