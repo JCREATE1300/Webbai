@@ -188,6 +188,20 @@ ipcMain.handle('webbai:get-token', async () => {
 
 ipcMain.handle('webbai:api-base', async () => API_BASE);
 
+// ----- IPC: screenshot of what the user is currently looking at -----
+ipcMain.handle('webbai:screenshot', async (event) => {
+  try {
+    const sender = BrowserWindow.fromWebContents(event.sender);
+    const win = sender || mainWindow;
+    if (!win) return null;
+    const image = await win.webContents.capturePage();
+    const resized = image.resize({ width: Math.min(1280, image.getSize().width) });
+    return resized.toDataURL();
+  } catch (e) {
+    return null;
+  }
+});
+
 // ----- IPC: local Gemma 4 runtime -----
 ipcMain.handle('local:status', async () => {
   try {
@@ -239,6 +253,7 @@ ipcMain.handle('update:check', async () => {
 });
 
 app.whenReady().then(() => {
+  enableEmbeddedWebView();
   createMainWindow();
   ollama.ensureServer().catch(() => {});
 });
