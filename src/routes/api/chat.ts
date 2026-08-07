@@ -20,16 +20,29 @@ export const Route = createFileRoute("/api/chat")({
             import("@/lib/ai-gateway.server"),
           ]);
 
-        const { createOpenRouterProvider, OPENROUTER_MODEL, pickOpenRouterKey } = gateway;
+        const {
+          createOpenRouterProvider,
+          OPENROUTER_MODEL,
+          OPENROUTER_VISION_MODEL,
+          pickOpenRouterKey,
+        } = gateway;
         const key = await pickOpenRouterKey();
         if (!key) return new Response("Missing OPENROUTER_API_KEY", { status: 500 });
-
-        const openrouter = createOpenRouterProvider(key);
-        const model = openrouter(OPENROUTER_MODEL);
 
         const threadId = body.threadId;
 
         const messages = body.messages as UIMessage[];
+
+        // If the newest user turn carries a screenshot, use a vision model.
+        const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+        const hasImage = (lastUserMsg?.parts ?? []).some(
+          (p) =>
+            (p as { type?: string; mediaType?: string }).type === "file" &&
+            String((p as { mediaType?: string }).mediaType ?? "").startsWith("image/"),
+        );
+
+        const openrouter = createOpenRouterProvider(key);
+        const model = openrouter(hasImage ? OPENROUTER_VISION_MODEL : OPENROUTER_MODEL);
 
         const result = streamText({
           model,
