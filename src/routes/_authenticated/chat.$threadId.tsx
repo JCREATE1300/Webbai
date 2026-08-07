@@ -346,7 +346,7 @@ function ChatThread() {
           <ConversationContent>
             {(messages.length === 0 && !msgsLoading) && (
               <div className="max-w-2xl mx-auto text-center py-16">
-                <WebbaiMark size={56} animated className="mx-auto" />
+                <WebbaiMark size={56} className="mx-auto" />
                 <h1 className="mt-4 text-2xl font-semibold">How can I help?</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Ask a question, or say <span className="font-medium">"open a website"</span> — it opens in a panel next to the chat with a fullscreen toggle.

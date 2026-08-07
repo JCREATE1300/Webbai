@@ -32,23 +32,22 @@ export function WebbaiMark({ size = 32, animated = false, className }: Props) {
         stroke="currentColor"
         strokeWidth={5}
       >
-        <g className={animated ? "webbai-orbit webbai-orbit-a" : undefined} style={{ transformOrigin: "50% 50%" }}>
-          <ellipse cx="50" cy="50" rx="46" ry="19" />
-        </g>
-        <g
-          className={animated ? "webbai-orbit webbai-orbit-b" : undefined}
-          style={{ transformOrigin: "50% 50%" }}
-          transform="rotate(60 50 50)"
-        >
-          <ellipse cx="50" cy="50" rx="46" ry="19" />
-        </g>
-        <g
-          className={animated ? "webbai-orbit webbai-orbit-c" : undefined}
-          style={{ transformOrigin: "50% 50%" }}
-          transform="rotate(120 50 50)"
-        >
-          <ellipse cx="50" cy="50" rx="46" ry="19" />
-        </g>
+        {[
+          { rot: 0, cls: "webbai-orbit-a" },
+          { rot: 60, cls: "webbai-orbit-b" },
+          { rot: 120, cls: "webbai-orbit-c" },
+        ].map(({ rot, cls }) => (
+          // Outer <g> holds the fixed tilt; the inner <g> owns the CSS animation
+          // so the spin never overwrites the tilt transform.
+          <g key={rot} transform={`rotate(${rot} 50 50)`}>
+            <g
+              className={animated ? cn("webbai-orbit", cls) : undefined}
+              style={{ transformOrigin: "50% 50%" }}
+            >
+              <ellipse cx="50" cy="50" rx="46" ry="19" />
+            </g>
+          </g>
+        ))}
         <circle
           cx="50"
           cy="50"
@@ -58,6 +57,7 @@ export function WebbaiMark({ size = 32, animated = false, className }: Props) {
           className={animated ? "webbai-nucleus" : undefined}
           style={{ transformOrigin: "50% 50%" }}
         />
+
       </svg>
     </span>
   );

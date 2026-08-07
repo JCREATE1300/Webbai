@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Bot } from "lucide-react";
+import { WebbaiMark } from "@/components/WebbaiMark";
 import { getElectron } from '@/lib/electron';
 
 export const Route = createFileRoute("/auth")({
@@ -128,9 +128,7 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/30 px-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-primary text-primary-foreground grid place-items-center shadow-lg">
-            <Bot className="w-7 h-7" />
-          </div>
+          <WebbaiMark size={56} />
           <h1 className="mt-4 text-2xl font-semibold text-center">
             Sign in to webbai — AI chat and in-app browser
           </h1>
