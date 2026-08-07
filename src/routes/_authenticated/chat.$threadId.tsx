@@ -14,7 +14,7 @@ import {
 } from "@/lib/threads.functions";
 import { getMyRole } from "@/lib/owner.functions";
 import { getWindowsDownloadUrl } from "@/lib/downloads.functions";
-import { getLocalBridge } from "@/lib/electron";
+import { getLocalBridge, getElectron, captureScreen } from "@/lib/electron";
 import { createLocalChatFetch } from "@/lib/local-chat";
 import { LocalModelSetup } from "@/components/LocalModelSetup";
 import {
@@ -52,6 +52,10 @@ import {
   Minimize2,
   ExternalLink,
   Cpu,
+  Camera,
+  PanelRightOpen,
+  PanelRightClose,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 
