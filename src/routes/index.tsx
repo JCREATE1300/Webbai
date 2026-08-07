@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bot, Globe, MousePointerClick, Download, MessagesSquare } from "lucide-react";
+import { Globe, MousePointerClick, Download, MessagesSquare } from "lucide-react";
+import { WebbaiMark } from "@/components/WebbaiMark";
 import { Button } from "@/components/ui/button";
 
 const TITLE = "webbai — AI browser assistant that opens and uses websites";
