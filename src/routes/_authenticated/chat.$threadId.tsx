@@ -14,7 +14,7 @@ import {
 } from "@/lib/threads.functions";
 import { getMyRole } from "@/lib/owner.functions";
 import { getWindowsDownloadUrl } from "@/lib/downloads.functions";
-import { getLocalBridge } from "@/lib/electron";
+import { getLocalBridge, getElectron, captureScreen } from "@/lib/electron";
 import { createLocalChatFetch } from "@/lib/local-chat";
 import { LocalModelSetup } from "@/components/LocalModelSetup";
 import {
@@ -52,6 +52,10 @@ import {
   Minimize2,
   ExternalLink,
   Cpu,
+  Camera,
+  PanelRightOpen,
+  PanelRightClose,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -206,13 +210,38 @@ function ChatThread() {
     }
   }, [messages]);
 
+  // Screen vision (desktop app only): attach a screenshot of what the user
+  // is looking at to every question.
+  const canSeeScreen = Boolean(getElectron()?.captureScreen);
+  const [seeScreen, setSeeScreen] = useState(true);
+  const [miniOpen, setMiniOpen] = useState(true);
+
+  const send = async (raw: string) => {
+    const text = raw.trim();
+    if (!text || status === "streaming" || status === "submitted") return;
+    if (canSeeScreen && seeScreen) {
+      const shot = await captureScreen();
+      if (shot) {
+        sendMessage({
+          parts: [
+            { type: "text", text },
+            { type: "file", mediaType: "image/png", filename: "screen.png", url: shot },
+          ],
+        } as any);
+        return;
+      }
+    }
+    sendMessage({ text });
+  };
+
   const [input, setInput] = useState("");
   const submit = () => {
     const text = input.trim();
-    if (!text || status === "streaming" || status === "submitted") return;
+    if (!text) return;
     setInput("");
-    sendMessage({ text });
+    void send(text);
   };
+
 
   const newChat = async () => {
     const t = await createFn();
@@ -360,7 +389,7 @@ function ChatThread() {
                   ].map((s) => (
                     <button
                       key={s}
-                      onClick={() => sendMessage({ text: s })}
+                      onClick={() => void send(s)}
                       className="rounded-lg border p-3 text-sm hover:bg-accent transition-colors"
                     >
                       {s}
@@ -436,7 +465,23 @@ function ChatThread() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask anything, or say 'open example.com'…"
               />
-              <PromptInputFooter className="justify-end">
+              <PromptInputFooter className="justify-between">
+                {canSeeScreen ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={seeScreen ? "secondary" : "ghost"}
+                    className="gap-2"
+                    aria-pressed={seeScreen}
+                    onClick={() => setSeeScreen((v) => !v)}
+                    title="Attach a screenshot of what you're looking at"
+                  >
+                    <Camera className="w-4 h-4" />
+                    {seeScreen ? "Seeing your screen" : "See my screen"}
+                  </Button>
+                ) : (
+                  <span />
+                )}
                 <PromptInputSubmit status={status} disabled={!input.trim() || isLoading} />
               </PromptInputFooter>
             </PromptInput>
@@ -494,13 +539,102 @@ function ChatThread() {
               <X className="w-4 h-4" />
             </Button>
           </div>
-          <iframe
-            src={openedUrl}
-            title={openedTitle}
-            className="flex-1 w-full bg-white"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
-            referrerPolicy="no-referrer"
-          />
+          <div className="flex-1 flex min-h-0">
+            <iframe
+              src={openedUrl}
+              title={openedTitle}
+              className="flex-1 h-full bg-white"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
+              referrerPolicy="no-referrer"
+            />
+
+            {/* Mini assistant side tab — only while the site is fullscreen */}
+            {isFullscreen && (
+              miniOpen ? (
+                <aside className="w-[340px] shrink-0 border-l bg-background flex flex-col">
+                  <div className="h-10 shrink-0 flex items-center gap-2 px-2 border-b">
+                    <WebbaiMark size={20} />
+                    <span className="text-xs font-medium flex-1">webbai</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      aria-label="Hide assistant"
+                      title="Hide assistant"
+                      onClick={() => setMiniOpen(false)}
+                    >
+                      <PanelRightClose className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                    {messages.slice(-12).map((m) => (
+                      <div
+                        key={m.id}
+                        className={`text-xs rounded-lg px-3 py-2 ${
+                          m.role === "user"
+                            ? "bg-primary/10 ml-6"
+                            : "bg-muted mr-6"
+                        }`}
+                      >
+                        {m.parts.map((part, i) => {
+                          const p = part as any;
+                          if (p.type === "text") {
+                            return (
+                              <div key={i} className="prose prose-xs max-w-none dark:prose-invert">
+                                <ReactMarkdown>{p.text}</ReactMarkdown>
+                              </div>
+                            );
+                          }
+                          if (p.type === "tool-open_website") {
+                            return (
+                              <div key={i} className="text-muted-foreground truncate">
+                                Opened {p.input?.url || p.output?.url}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    ))}
+                    {isLoading && (
+                      <div className="flex items-center gap-2">
+                        <WebbaiMark size={18} animated />
+                        <Shimmer>Thinking…</Shimmer>
+                      </div>
+                    )}
+                  </div>
+                  <form
+                    className="p-2 border-t flex items-center gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      submit();
+                    }}
+                  >
+                    <input
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder="Ask about this page…"
+                      aria-label="Ask the assistant about this page"
+                      className="flex-1 min-w-0 rounded-md border bg-background px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring"
+                    />
+                    <Button type="submit" size="icon" className="h-8 w-8" disabled={!input.trim() || isLoading} aria-label="Send">
+                      <Send className="w-3.5 h-3.5" />
+                    </Button>
+                  </form>
+                </aside>
+              ) : (
+                <button
+                  onClick={() => setMiniOpen(true)}
+                  aria-label="Open assistant"
+                  className="w-9 shrink-0 border-l bg-muted/40 hover:bg-accent flex flex-col items-center justify-center gap-2"
+                >
+                  <PanelRightOpen className="w-4 h-4" />
+                  <WebbaiMark size={18} />
+                </button>
+              )
+            )}
+          </div>
+
         </section>
       )}
     </div>

@@ -53,6 +53,7 @@ type ElectronBridge = {
   onUpdateError: (callback: (message: string) => void) => void;
   checkForUpdates: () => Promise<unknown>;
   restartAndInstall: () => Promise<unknown>;
+  captureScreen?: () => Promise<string | null>;
   local?: LocalBridge;
 };
 
@@ -63,4 +64,15 @@ export function getElectron(): ElectronBridge | undefined {
 
 export function getLocalBridge(): LocalBridge | undefined {
   return getElectron()?.local;
+}
+
+/** Screenshot of the window the user is currently looking at (desktop app only). */
+export async function captureScreen(): Promise<string | null> {
+  const api = getElectron();
+  if (!api?.captureScreen) return null;
+  try {
+    return await api.captureScreen();
+  } catch {
+    return null;
+  }
 }

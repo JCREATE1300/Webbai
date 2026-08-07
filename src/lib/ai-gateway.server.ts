@@ -26,6 +26,8 @@ export function createOpenRouterProvider(apiKey: string) {
 // Best-in-class free model on OpenRouter (strong reasoning + tool calling).
 // If OpenRouter rate-limits or deprecates it, swap for another ":free" model.
 export const OPENROUTER_MODEL = "openai/gpt-oss-20b:free";
+/** Used when the user's message includes a screenshot (needs image input). */
+export const OPENROUTER_VISION_MODEL = "meta-llama/llama-3.2-11b-vision-instruct:free";
 
 /** All configured OpenRouter keys, in priority order (primary first). */
 export function getOpenRouterKeys(): string[] {
