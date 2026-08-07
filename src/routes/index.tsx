@@ -64,9 +64,8 @@ function Landing() {
     <main className="min-h-screen bg-gradient-to-br from-background via-background to-accent/30">
       <div className="mx-auto max-w-4xl px-4 py-20">
         <header className="text-center">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-            <Bot className="h-7 w-7" />
-          </div>
+          <WebbaiMark size={56} className="mx-auto" />
+
           <h1 className="mt-6 text-4xl font-semibold tracking-tight">
             webbai — an AI browser you can talk to
           </h1>
