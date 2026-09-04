@@ -47,7 +47,8 @@ jobs:
           Invoke-WebRequest -Uri "https://ollama.com/download/ollama-windows-amd64.zip" -OutFile ollama.zip
           Expand-Archive -Path ollama.zip -DestinationPath vendor/ollama -Force
           Remove-Item ollama.zip
-          Get-ChildItem vendor/ollama
+          if (-not (Test-Path vendor/ollama/ollama.exe)) { throw "ollama.exe missing from runtime zip" }
+          Get-ChildItem -Recurse vendor/ollama | Select-Object -First 30
 
       - name: Build Windows NSIS installer
         working-directory: electron
