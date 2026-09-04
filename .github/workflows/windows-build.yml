@@ -56,21 +56,27 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win nsis --publish never
 
-      - name: Rename installer
+      - name: Verify installer output
         shell: pwsh
         working-directory: electron/release
         run: |
-          $exe = Get-ChildItem -Filter *.exe | Select-Object -First 1
-          if ($exe) { Rename-Item $exe.FullName "webbai-windows.exe" }
+          if (-not (Test-Path webbai-windows.exe)) { throw "Installer was not produced" }
+          Get-ChildItem
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: webbai-windows
-          path: electron/release/webbai-windows.exe
+          path: |
+            electron/release/webbai-windows.exe
+            electron/release/webbai-windows.exe.blockmap
+            electron/release/latest.yml
 
       - name: Publish to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: electron/release/webbai-windows.exe
+          files: |
+            electron/release/webbai-windows.exe
+            electron/release/webbai-windows.exe.blockmap
+            electron/release/latest.yml
