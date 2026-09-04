@@ -33,6 +33,7 @@
       "package.json"
     ],
     "win": {
+      "icon": "icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -48,7 +49,17 @@
       "allowToChangeInstallationDirectory": true,
       "artifactName": "webbai-setup-${version}.exe",
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "installerHeaderIcon": "icon.ico",
+      "installerHeader": "installerHeader.bmp",
+      "installerSidebar": "installerSidebar.bmp",
+      "uninstallerSidebar": "uninstallerSidebar.bmp",
+      "include": "installer.nsh",
+      "shortcutName": "webbai",
+      "uninstallDisplayName": "webbai"
     },
     "publish": {
       "provider": "github",
