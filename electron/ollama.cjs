@@ -74,10 +74,14 @@ async function ensureServer() {
     // already starting — wait for it
   } else {
     try {
-      serverProc = spawn(binaryPath(), ['serve'], {
+      const bin = binaryPath();
+      serverProc = spawn(bin, ['serve'], {
         stdio: 'ignore',
         windowsHide: true,
         detached: false,
+        // Run next to the binary so the bundled runtime libs (lib/ollama) resolve.
+        cwd: path.isAbsolute(bin) ? path.dirname(bin) : undefined,
+        env: { ...process.env, OLLAMA_HOST: '127.0.0.1:11434' },
       });
       serverProc.on('exit', () => {
         serverProc = null;
