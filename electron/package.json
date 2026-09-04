@@ -47,7 +47,7 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "webbai-setup-${version}.exe",
+      "artifactName": "webbai-windows.exe",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "runAfterFinish": true,

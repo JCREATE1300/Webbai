@@ -4,19 +4,25 @@
 !macro customHeader
   ShowInstDetails show
   ShowUninstDetails show
-  !define MUI_WELCOMEPAGE_TITLE "Welcome to webbai"
-  !define MUI_WELCOMEPAGE_TEXT "webbai is your AI assistant that can browse websites for you and answer questions — online and offline.$\r$\n$\r$\nThis setup installs webbai and can download the Gemma 4 AI model so the assistant works without an internet connection.$\r$\n$\r$\nClick Next to continue."
-  !define MUI_FINISHPAGE_TITLE "webbai is ready"
-  !define MUI_FINISHPAGE_TEXT "webbai has been installed on your computer.$\r$\n$\r$\nIf you downloaded the Gemma 4 model, the assistant will answer locally right away. Otherwise you can pick a model inside webbai at any time."
+  !ifndef MUI_WELCOMEPAGE_TITLE
+    !define MUI_WELCOMEPAGE_TITLE "Welcome to webbai"
+  !endif
+  !ifndef MUI_WELCOMEPAGE_TEXT
+    !define MUI_WELCOMEPAGE_TEXT "webbai is your AI assistant that can browse websites for you and answer questions — online and offline.$\r$\n$\r$\nThis setup installs webbai and can download the Gemma 4 AI model so the assistant works without an internet connection.$\r$\n$\r$\nClick Next to continue."
+  !endif
+  !ifndef MUI_FINISHPAGE_TITLE
+    !define MUI_FINISHPAGE_TITLE "webbai is ready"
+  !endif
+  !ifndef MUI_FINISHPAGE_TEXT
+    !define MUI_FINISHPAGE_TEXT "webbai has been installed on your computer.$\r$\n$\r$\nIf you downloaded the Gemma 4 model, the assistant will answer locally right away. Otherwise you can pick a model inside webbai at any time."
+  !endif
 !macroend
 
 !macro customInstall
   ; ---- Local AI model (downloaded during setup, not bundled in the .exe) ----
   IfFileExists "$INSTDIR\resources\ollama\ollama.exe" 0 webbai_skip_model
 
-  MessageBox MB_YESNO|MB_ICONQUESTION \
-    "Download the Gemma 4 AI model now (about 9.6 GB)?$\r$\n$\r$\nThis lets webbai answer questions offline as soon as setup finishes. It needs an internet connection and a few minutes.$\r$\n$\r$\nChoose No to pick a model later inside webbai." \
-    /SD IDYES IDNO webbai_skip_model
+  MessageBox MB_YESNO|MB_ICONQUESTION "Download the Gemma 4 AI model now (about 9.6 GB)?$\r$\n$\r$\nThis lets webbai answer questions offline as soon as setup finishes. It needs an internet connection and a few minutes.$\r$\n$\r$\nChoose No to pick a model later inside webbai." /SD IDYES IDNO webbai_skip_model
 
   DetailPrint "Starting the local AI runtime..."
   ExecShell "open" "$INSTDIR\resources\ollama\ollama.exe" "serve" SW_HIDE
