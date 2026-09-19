@@ -18,7 +18,6 @@ Var WebbaiRb2
 Var WebbaiRb3
 Var WebbaiRb4
 Var WebbaiRb5
-Var WebbaiRb6
 
 !define WEBBAI_PBM_SETPOS     0x0402
 !define WEBBAI_PBM_SETRANGE32 0x0406
@@ -72,12 +71,10 @@ Function WebbaiModelPageCreate
   Pop $WebbaiRb4
   ${NSD_CreateRadioButton} 0 93u 100% 11u "DeepSeek R1 7B — step-by-step reasoning (about 4.7 GB)"
   Pop $WebbaiRb5
-  ${NSD_CreateRadioButton} 0 110u 100% 11u "Don't download anything — use webbai online only"
-  Pop $WebbaiRb6
 
   ${NSD_Check} $WebbaiRb0
 
-  ${NSD_CreateLabel} 0 126u 100% 20u "The model is downloaded from the internet during setup — it is not packed inside this installer, so the download you already made stayed small."
+  ${NSD_CreateLabel} 0 110u 100% 20u "The model is downloaded from the internet during setup — it is not packed inside this installer, so the download you already made stayed small."
   Pop $0
 
   nsDialogs::Show
