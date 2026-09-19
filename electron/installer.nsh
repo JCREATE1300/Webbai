@@ -4,6 +4,9 @@
 !include "nsDialogs.nsh"
 !include "LogicLib.nsh"
 !include "FileFunc.nsh"
+!include "WordFunc.nsh"
+!insertmacro WordFind
+!insertmacro GetSize
 
 Var WebbaiPage
 Var WebbaiModel          ; ollama model tag, empty = online only
