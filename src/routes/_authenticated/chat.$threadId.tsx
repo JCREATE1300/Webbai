@@ -210,8 +210,10 @@ function ChatThread() {
     }
   }, [messages]);
 
-  // Screen vision (desktop app only): attach a screenshot of what the user
-  // is looking at to every question.
+  // Screen vision (desktop app only): whenever a website is open in the app,
+  // automatically screenshot it with every question; otherwise the
+  // "See my screen" toggle controls it. Screenshots are never saved — the
+  // server reads them for that answer and discards them.
   const canSeeScreen = Boolean(getElectron()?.captureScreen);
   const [seeScreen, setSeeScreen] = useState(true);
   const [miniOpen, setMiniOpen] = useState(true);
@@ -219,7 +221,7 @@ function ChatThread() {
   const send = async (raw: string) => {
     const text = raw.trim();
     if (!text || status === "streaming" || status === "submitted") return;
-    if (canSeeScreen && seeScreen) {
+    if (canSeeScreen && (seeScreen || openedUrl)) {
       const shot = await captureScreen();
       if (shot) {
         sendMessage({

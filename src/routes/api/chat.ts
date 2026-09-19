@@ -99,11 +99,22 @@ If the user's message includes a screenshot, it is a live capture of the screen 
                 parts: unknown;
               }> = [];
               if (lastUser) {
+                // Screenshots are only needed to answer the current question —
+                // never store them in chat history. Keep the text and drop the
+                // image data so it is deleted as soon as it has served its turn.
+                const rawParts = Array.isArray(lastUser.parts) ? lastUser.parts : [];
+                const cleanedParts = (rawParts as Array<{ type?: string; mediaType?: string }>).flatMap(
+                  (p) => {
+                    const isImage =
+                      p?.type === "file" && String(p?.mediaType ?? "").startsWith("image/");
+                    return isImage ? [] : [p];
+                  },
+                );
                 rows.push({
                   thread_id: threadId,
                   user_id: userId,
                   role: "user",
-                  parts: lastUser.parts,
+                  parts: cleanedParts,
                 });
               }
               for (const m of newAssistants) {
