@@ -227,6 +227,20 @@ ipcMain.handle('webbai:get-token', async () => {
 
 ipcMain.handle('webbai:api-base', async () => API_BASE);
 
+// Open the sign-in page in the user's real browser; it hands the session back
+// through the webbai:// deep link when they're done.
+ipcMain.handle('webbai:open-external-signin', async () => {
+  await shell.openExternal(`${APP_URL}/auth?desktop=1`);
+  return true;
+});
+
+// Renderer asks for any session that arrived before it was listening.
+ipcMain.handle('webbai:pending-auth', async () => {
+  const t = pendingTokens;
+  pendingTokens = null;
+  return t;
+});
+
 // ----- IPC: screenshot of what the user is currently looking at -----
 ipcMain.handle('webbai:screenshot', async (event) => {
   try {
