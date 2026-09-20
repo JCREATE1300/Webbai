@@ -160,6 +160,10 @@ function ChatThread() {
     };
   }, [localBridge]);
 
+  // Online (cloud) AI is owner-only; everyone else needs the desktop app's
+  // local model.
+  const onlineLocked = !localReady && myRole !== undefined && !myRole.isOwner;
+
   const transport = useMemo(
     () =>
       localReady
