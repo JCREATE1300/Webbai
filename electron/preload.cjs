@@ -16,6 +16,15 @@ contextBridge.exposeInMainWorld('electron', {
   // Screenshot of the window the user is currently looking at
   captureScreen: () => ipcRenderer.invoke('webbai:screenshot'),
 
+  // Browser-based sign-in handoff
+  openExternalSignIn: () => ipcRenderer.invoke('webbai:open-external-signin'),
+  getPendingAuth: () => ipcRenderer.invoke('webbai:pending-auth'),
+  onAuthTokens: (cb) => {
+    const handler = (_e, payload) => cb(payload);
+    ipcRenderer.on('webbai:auth-tokens', handler);
+    return () => ipcRenderer.removeListener('webbai:auth-tokens', handler);
+  },
+
   // Update APIs
   onUpdateAvailable: (callback) => ipcRenderer.on('update-available', callback),
   onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', callback),

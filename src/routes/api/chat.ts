@@ -13,6 +13,38 @@ export const Route = createFileRoute("/api/chat")({
         }
 
         const authHeader = request.headers.get("authorization");
+
+        // The online (cloud) AI is reserved for the owner. Everyone else uses
+        // the local model in the downloaded desktop app.
+        if (!authHeader) {
+          return new Response("Sign in required", { status: 401 });
+        }
+        {
+          const { createClient } = await import("@supabase/supabase-js");
+          const authClient = createClient(
+            process.env.SUPABASE_URL!,
+            process.env.SUPABASE_PUBLISHABLE_KEY!,
+            {
+              global: { headers: { Authorization: authHeader } },
+              auth: { persistSession: false, autoRefreshToken: false },
+            },
+          );
+          const { data: userData } = await authClient.auth.getUser();
+          const uid = userData.user?.id;
+          if (!uid) return new Response("Sign in required", { status: 401 });
+          const { data: roleRows } = await authClient
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", uid)
+            .eq("role", "owner");
+          if (!roleRows || roleRows.length === 0) {
+            return new Response(
+              "The online assistant is owner-only. Download the webbai desktop app to chat with the local AI model.",
+              { status: 403 },
+            );
+          }
+        }
+
         const [{ convertToModelMessages, streamText, tool, stepCountIs }, { z }, gateway] =
           await Promise.all([
             import("ai"),

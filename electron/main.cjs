@@ -29,6 +29,45 @@ function isAuthUrl(rawUrl) {
 
 let mainWindow = null;
 
+// ---- Deep link sign-in (webbai://auth?access_token=...&refresh_token=...) ----
+const PROTOCOL = 'webbai';
+let pendingTokens = null;
+
+function registerProtocol() {
+  try {
+    if (process.defaultApp && process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1])]);
+    } else {
+      app.setAsDefaultProtocolClient(PROTOCOL);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function handleDeepLink(rawUrl) {
+  if (!rawUrl || !rawUrl.startsWith(PROTOCOL + '://')) return;
+  try {
+    const u = new URL(rawUrl);
+    const params = new URLSearchParams(u.search || (u.hash || '').replace(/^#/, ''));
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    if (!access_token || !refresh_token) return;
+    pendingTokens = { access_token, refresh_token };
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+      mainWindow.webContents.send('webbai:auth-tokens', pendingTokens);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function deepLinkFromArgv(argv) {
+  return (argv || []).find((a) => typeof a === 'string' && a.startsWith(PROTOCOL + '://'));
+}
+
 // Websites normally refuse to load inside an <iframe> (X-Frame-Options /
 // CSP frame-ancestors). In the desktop app we control the browser, so strip
 // those headers to make the in-app web view work like a real browser tab.
@@ -188,6 +227,20 @@ ipcMain.handle('webbai:get-token', async () => {
 
 ipcMain.handle('webbai:api-base', async () => API_BASE);
 
+// Open the sign-in page in the user's real browser; it hands the session back
+// through the webbai:// deep link when they're done.
+ipcMain.handle('webbai:open-external-signin', async () => {
+  await shell.openExternal(`${APP_URL}/auth?desktop=1`);
+  return true;
+});
+
+// Renderer asks for any session that arrived before it was listening.
+ipcMain.handle('webbai:pending-auth', async () => {
+  const t = pendingTokens;
+  pendingTokens = null;
+  return t;
+});
+
 // ----- IPC: screenshot of what the user is currently looking at -----
 ipcMain.handle('webbai:screenshot', async (event) => {
   try {
@@ -252,11 +305,31 @@ ipcMain.handle('update:check', async () => {
   return result;
 });
 
-app.whenReady().then(() => {
-  enableEmbeddedWebView();
-  createMainWindow();
-  ollama.ensureServer().catch(() => {});
-});
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_e, argv) => {
+    handleDeepLink(deepLinkFromArgv(argv));
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
+  app.on('open-url', (event, url) => {
+    event.preventDefault();
+    handleDeepLink(url);
+  });
+
+  app.whenReady().then(() => {
+    registerProtocol();
+    enableEmbeddedWebView();
+    createMainWindow();
+    handleDeepLink(deepLinkFromArgv(process.argv));
+    ollama.ensureServer().catch(() => {});
+  });
+}
 
 app.on('window-all-closed', () => {
   ollama.stopServer();
