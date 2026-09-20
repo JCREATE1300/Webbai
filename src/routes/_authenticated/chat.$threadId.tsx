@@ -461,11 +461,25 @@ function ChatThread() {
 
         <div className="p-4 border-t bg-background">
           <div className="max-w-3xl mx-auto">
+            {onlineLocked && (
+              <div className="mb-3 rounded-lg border bg-muted/50 px-4 py-3 text-sm text-muted-foreground flex items-center gap-3">
+                <Download className="w-4 h-4 shrink-0" />
+                <span>
+                  The online assistant is reserved for the owner. Download the webbai
+                  desktop app to chat with the AI model that runs on your own computer.
+                </span>
+              </div>
+            )}
             <PromptInput onSubmit={submit}>
               <PromptInputTextarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask anything, or say 'open example.com'…"
+                disabled={onlineLocked}
+                placeholder={
+                  onlineLocked
+                    ? "Download the desktop app to chat"
+                    : "Ask anything, or say 'open example.com'…"
+                }
               />
               <PromptInputFooter className="justify-between">
                 {canSeeScreen ? (
