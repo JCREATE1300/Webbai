@@ -54,8 +54,13 @@ type ElectronBridge = {
   checkForUpdates: () => Promise<unknown>;
   restartAndInstall: () => Promise<unknown>;
   captureScreen?: () => Promise<string | null>;
+  openExternalSignIn?: () => Promise<boolean>;
+  getPendingAuth?: () => Promise<AuthTokens | null>;
+  onAuthTokens?: (cb: (t: AuthTokens) => void) => () => void;
   local?: LocalBridge;
 };
+
+export type AuthTokens = { access_token: string; refresh_token: string };
 
 export function getElectron(): ElectronBridge | undefined {
   if (typeof window === "undefined") return undefined;
