@@ -29,6 +29,45 @@ function isAuthUrl(rawUrl) {
 
 let mainWindow = null;
 
+// ---- Deep link sign-in (webbai://auth?access_token=...&refresh_token=...) ----
+const PROTOCOL = 'webbai';
+let pendingTokens = null;
+
+function registerProtocol() {
+  try {
+    if (process.defaultApp && process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1])]);
+    } else {
+      app.setAsDefaultProtocolClient(PROTOCOL);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function handleDeepLink(rawUrl) {
+  if (!rawUrl || !rawUrl.startsWith(PROTOCOL + '://')) return;
+  try {
+    const u = new URL(rawUrl);
+    const params = new URLSearchParams(u.search || (u.hash || '').replace(/^#/, ''));
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    if (!access_token || !refresh_token) return;
+    pendingTokens = { access_token, refresh_token };
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+      mainWindow.webContents.send('webbai:auth-tokens', pendingTokens);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function deepLinkFromArgv(argv) {
+  return (argv || []).find((a) => typeof a === 'string' && a.startsWith(PROTOCOL + '://'));
+}
+
 // Websites normally refuse to load inside an <iframe> (X-Frame-Options /
 // CSP frame-ancestors). In the desktop app we control the browser, so strip
 // those headers to make the in-app web view work like a real browser tab.
