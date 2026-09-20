@@ -119,7 +119,7 @@ function AuthPage() {
           password: result.password,
         });
         if (error) throw error;
-        navigate({ to: "/chat" });
+        await afterSignIn();
         return;
       }
 
