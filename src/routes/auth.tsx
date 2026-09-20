@@ -145,35 +145,54 @@ function AuthPage() {
 
 
   const google = async () => {
-    // Check if running in Electron
-    const isElectron = typeof window !== 'undefined' && Boolean(getElectron());
-    
-    if (isElectron) {
-      // In Electron, open OAuth in browser
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) {
-        toast.error(result.error.message);
-        return;
-      }
-      if (result.redirected) {
-        // Redirect happened in browser, now redirect back to app when callback comes
-        return;
-      }
-    } else {
-      // Web version, use default behavior
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) {
-        toast.error(result.error.message);
-        return;
-      }
-      if (result.redirected) return;
-      navigate({ to: "/chat" });
+    const redirect = desktopHandoff
+      ? `${window.location.origin}/auth?desktop=1`
+      : window.location.origin;
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: redirect,
+    });
+    if (result.error) {
+      toast.error(result.error.message);
+      return;
     }
+    if (result.redirected) return;
+    await afterSignIn();
   };
+
+  const signInViaBrowser = async () => {
+    const api = getElectron();
+    if (!api?.openExternalSignIn) {
+      toast.error("Update the webbai app to sign in through your browser.");
+      return;
+    }
+    await api.openExternalSignIn();
+    toast.info("Finish signing in in your browser — you'll come right back here.");
+  };
+
+  if (isElectron) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/30 px-4">
+        <div className="w-full max-w-md text-center">
+          <div className="flex flex-col items-center mb-8">
+            <WebbaiMark size={56} />
+            <h1 className="mt-4 text-2xl font-semibold">Sign in to webbai</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              We'll open your browser so you can sign in safely. When you're done,
+              you'll be sent straight back here already signed in.
+            </p>
+          </div>
+          <div className="rounded-2xl border bg-card p-6 shadow-sm">
+            <Button className="w-full" onClick={signInViaBrowser} type="button">
+              Sign in in your browser
+            </Button>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Waiting for you to finish in the browser…
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/30 px-4">
