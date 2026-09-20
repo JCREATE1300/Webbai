@@ -305,11 +305,31 @@ ipcMain.handle('update:check', async () => {
   return result;
 });
 
-app.whenReady().then(() => {
-  enableEmbeddedWebView();
-  createMainWindow();
-  ollama.ensureServer().catch(() => {});
-});
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_e, argv) => {
+    handleDeepLink(deepLinkFromArgv(argv));
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
+  app.on('open-url', (event, url) => {
+    event.preventDefault();
+    handleDeepLink(url);
+  });
+
+  app.whenReady().then(() => {
+    registerProtocol();
+    enableEmbeddedWebView();
+    createMainWindow();
+    handleDeepLink(deepLinkFromArgv(process.argv));
+    ollama.ensureServer().catch(() => {});
+  });
+}
 
 app.on('window-all-closed', () => {
   ollama.stopServer();
