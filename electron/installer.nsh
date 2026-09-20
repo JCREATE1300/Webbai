@@ -1,6 +1,7 @@
 ; webbai — custom NSIS additions for the Windows installer.
 ; Included by electron-builder (see package.json → build.nsis.include).
 
+!include "MUI2.nsh"
 !include "nsDialogs.nsh"
 !include "LogicLib.nsh"
 !include "FileFunc.nsh"
@@ -30,13 +31,13 @@ Var WebbaiRb5
     !define MUI_WELCOMEPAGE_TITLE "Welcome to webbai"
   !endif
   !ifndef MUI_WELCOMEPAGE_TEXT
-    !define MUI_WELCOMEPAGE_TEXT "webbai is your AI assistant that can browse websites for you and answer questions — online and offline.$\r$\n$\r$\nSetup installs webbai and can download an AI model of your choice so the assistant works without an internet connection.$\r$\n$\r$\nClick Next to continue."
+    !define MUI_WELCOMEPAGE_TEXT "webbai is your AI assistant that can browse websites for you and answer questions — online and offline.$\r$\n$\r$\nSetup installs webbai and can download an AI model for offline use."
   !endif
   !ifndef MUI_FINISHPAGE_TITLE
     !define MUI_FINISHPAGE_TITLE "webbai is ready"
   !endif
   !ifndef MUI_FINISHPAGE_TEXT
-    !define MUI_FINISHPAGE_TEXT "webbai has been installed on your computer.$\r$\n$\r$\nIf you chose an offline AI model, the assistant is already set to use it. You can switch models inside webbai at any time."
+    !define MUI_FINISHPAGE_TEXT "webbai has been installed on your computer.$\r$\n$\r$\nIf you chose an offline AI model, the assistant is already set to use it. You can switch models inside webbai later."
   !endif
 !macroend
 
