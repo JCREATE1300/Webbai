@@ -502,7 +502,7 @@ function ChatThread() {
                 ) : (
                   <span />
                 )}
-                <PromptInputSubmit status={status} disabled={!input.trim() || isLoading} />
+                <PromptInputSubmit status={status} disabled={!input.trim() || isLoading || onlineLocked} />
               </PromptInputFooter>
             </PromptInput>
           </div>
