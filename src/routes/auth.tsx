@@ -134,7 +134,7 @@ function AuthPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/chat" });
+        await afterSignIn();
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Auth failed");
