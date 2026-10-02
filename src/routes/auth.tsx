@@ -155,7 +155,7 @@ function AuthPage() {
       toast.error(result.error.message);
       return;
     }
-    if (result.redirected) return;
+    // FIX: Always call afterSignIn to trigger desktop handoff, regardless of redirected status
     await afterSignIn();
   };
 
