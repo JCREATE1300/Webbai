@@ -7,6 +7,14 @@ const fs = require('fs');
 const HOST = 'http://127.0.0.1:11434';
 
 const MODELS = [
+  { id: 'llama3.2:3b', label: 'Llama 3.2 3B', size: '2.0 GB', ctx: '128K', note: 'Small and fast (Meta)' },
+  { id: 'qwen2.5:7b', label: 'Qwen 2.5 7B', size: '4.7 GB', ctx: '128K', note: 'Strong all-rounder (Alibaba)' },
+  { id: 'phi4-mini', label: 'Phi-4 Mini', size: '2.5 GB', ctx: '128K', note: 'Compact reasoning (Microsoft)' },
+  { id: 'mistral:7b', label: 'Mistral 7B', size: '4.4 GB', ctx: '32K', note: 'Classic open model' },
+  { id: 'deepseek-r1:7b', label: 'DeepSeek R1 7B', size: '4.7 GB', ctx: '128K', note: 'Thinks step by step' },
+  { id: 'llava:7b', label: 'LLaVA 7B', size: '4.7 GB', ctx: '4K', note: 'Can see images & screenshots' },
+  { id: 'qwen2.5vl:7b', label: 'Qwen 2.5 VL 7B', size: '6.0 GB', ctx: '128K', note: 'Vision — reads your screen well' },
+  { id: 'gemma3:4b', label: 'Gemma 3 4B', size: '3.3 GB', ctx: '128K', note: 'Sees images, light (Google)' },
   { id: 'gemma4:e2b', label: 'Gemma 4 E2B', size: '7.2 GB', ctx: '128K', note: 'Lightest — best for 8 GB RAM laptops' },
   { id: 'gemma4:e4b', label: 'Gemma 4 E4B', size: '9.6 GB', ctx: '128K', note: 'Balanced default' },
   { id: 'gemma4:12b', label: 'Gemma 4 12B', size: '7.6 GB', ctx: '256K', note: 'Smarter, 256K context' },
@@ -15,6 +23,42 @@ const MODELS = [
 ];
 
 let serverProc = null;
+
+// Search the full Ollama library (every model it offers).
+async function searchModels(query) {
+  const q = String(query || '').trim();
+  try {
+    const url = q ? `https://ollama.com/search?q=${encodeURIComponent(q)}` : 'https://ollama.com/library';
+    const res = await fetch(url, { headers: { 'User-Agent': 'webbai' } });
+    if (!res.ok) throw new Error(String(res.status));
+    const html = await res.text();
+    const seen = new Set();
+    const out = [];
+    const re = /href="\/library\/([a-zA-Z0-9._-]+)"/g;
+    let m;
+    while ((m = re.exec(html))) {
+      const name = m[1];
+      if (seen.has(name)) continue;
+      seen.add(name);
+      // grab a description + sizes near the link
+      const chunk = html.slice(m.index, m.index + 4000);
+      const desc = (chunk.match(/<p[^>]*>([^<]{10,300})<\/p>/) || [])[1] || '';
+      const sizes = Array.from(chunk.matchAll(/x-test-size[^>]*>([^<]+)</g)).map((x) => x[1].trim());
+      const caps = Array.from(chunk.matchAll(/x-test-capability[^>]*>([^<]+)</g)).map((x) => x[1].trim());
+      out.push({ name, description: desc.trim(), sizes, capabilities: caps });
+      if (out.length >= 60) break;
+    }
+    return out;
+  } catch {
+    const lq = q.toLowerCase();
+    return MODELS.filter((x) => !lq || x.id.includes(lq) || x.label.toLowerCase().includes(lq)).map((x) => ({
+      name: x.id,
+      description: x.note,
+      sizes: [],
+      capabilities: [],
+    }));
+  }
+}
 
 function settingsFile() {
   return path.join(app.getPath('userData'), 'webbai-local.json');
@@ -185,11 +229,25 @@ async function chat({ messages, tools }, onChunk) {
   const model = readSettings().model;
   if (!model) throw new Error('No local model selected.');
 
-  const res = await fetch(`${HOST}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, messages, tools, stream: true }),
-  });
+  const send = (withTools) =>
+    fetch(`${HOST}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(withTools ? { model, messages, tools, stream: true } : { model, messages, stream: true }),
+    });
+  let res = await send(true);
+  if (!res.ok) {
+    // Many models don't support tools (or images) — retry plainly.
+    res = await send(false);
+  }
+  if (!res.ok) {
+    const plain = messages.map(({ images, ...m }) => m);
+    res = await fetch(`${HOST}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, messages: plain, stream: true }),
+    });
+  }
   if (!res.ok || !res.body) throw new Error(`Local model error (${res.status})`);
 
   const reader = res.body.getReader();
@@ -242,4 +300,4 @@ function stopServer() {
   }
 }
 
-module.exports = { MODELS, ensureServer, status, pullModel, chat, setModel, stopServer, readSettings };
+module.exports = { MODELS, searchModels, ensureServer, status, pullModel, chat, setModel, stopServer, readSettings };

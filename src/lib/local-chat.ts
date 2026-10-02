@@ -3,6 +3,8 @@ import { getLocalBridge, type LocalChatChunk } from "@/lib/electron";
 
 const SYSTEM_PROMPT = `You are webbai, a helpful AI assistant running locally on the user's computer.
 
+When the user's message includes an image, it is a screenshot of what they are looking at (or a file they attached) — use it to answer.
+
 You have a tool called open_website that opens a URL inside the app's in-app browser panel. Call it whenever the user asks you to open, show, visit, load, or look up a website. Always pass a full https:// URL.
 
 Format regular replies using Markdown.`;
@@ -55,8 +57,22 @@ export function createLocalChatFetch(): typeof fetch {
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...uiMessages.map((m) => ({ role: m.role, content: toPlainText(m) })),
-    ].filter((m) => m.content.length > 0 || m.role === "system");
+      ...uiMessages.map((m, i) => {
+        const msg: { role: string; content: string; images?: string[] } = {
+          role: m.role,
+          content: toPlainText(m),
+        };
+        // Only the newest turn carries images (screenshots aren't kept around).
+        if (i === uiMessages.length - 1) {
+          const images = m.parts
+            .map((p) => p as { type: string; mediaType?: string; url?: string })
+            .filter((p) => p.type === "file" && p.mediaType?.startsWith("image/") && p.url)
+            .map((p) => String(p.url).replace(/^data:[^,]+,/, ""));
+          if (images.length) msg.images = images;
+        }
+        return msg;
+      }),
+    ].filter((m) => m.content.length > 0 || m.role === "system" || m.images);
 
     const requestId = crypto.randomUUID();
     const textId = crypto.randomUUID();
