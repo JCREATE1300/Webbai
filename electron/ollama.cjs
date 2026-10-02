@@ -229,11 +229,25 @@ async function chat({ messages, tools }, onChunk) {
   const model = readSettings().model;
   if (!model) throw new Error('No local model selected.');
 
-  const res = await fetch(`${HOST}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, messages, tools, stream: true }),
-  });
+  const send = (withTools) =>
+    fetch(`${HOST}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(withTools ? { model, messages, tools, stream: true } : { model, messages, stream: true }),
+    });
+  let res = await send(true);
+  if (!res.ok) {
+    // Many models don't support tools (or images) — retry plainly.
+    res = await send(false);
+  }
+  if (!res.ok) {
+    const plain = messages.map(({ images, ...m }) => m);
+    res = await fetch(`${HOST}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, messages: plain, stream: true }),
+    });
+  }
   if (!res.ok || !res.body) throw new Error(`Local model error (${res.status})`);
 
   const reader = res.body.getReader();
