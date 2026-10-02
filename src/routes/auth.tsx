@@ -143,7 +143,8 @@ function AuthPage() {
       toast.error(result.error.message);
       return;
     }
-    // FIX: Always call afterSignIn to trigger desktop handoff, regardless of redirected status
+    // A redirect means the page is leaving; it continues on return.
+    if ("redirected" in result && result.redirected) return;
     await afterSignIn();
   };
 
