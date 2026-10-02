@@ -1,27 +1,6 @@
 ; webbai — custom NSIS additions for the Windows installer.
-; Included by electron-builder (see package.json → build.nsis.include).
-
-!include "MUI2.nsh"
-!include "nsDialogs.nsh"
-!include "LogicLib.nsh"
-!include "FileFunc.nsh"
-!include "WordFunc.nsh"
-!insertmacro WordFind
-!insertmacro GetSize
-
-Var WebbaiPage
-Var WebbaiModel
-Var WebbaiModelLabel
-Var WebbaiModelKB
-Var WebbaiRb0
-Var WebbaiRb1
-Var WebbaiRb2
-Var WebbaiRb3
-Var WebbaiRb4
-Var WebbaiRb5
-
-!define WEBBAI_PBM_SETPOS     0x0402
-!define WEBBAI_PBM_SETRANGE32 0x0406
+; Included by electron-builder (see package.json -> build.nsis.include).
+; AI models are NOT downloaded during setup; webbai asks for one on first use.
 
 !macro customHeader
   ShowInstDetails show
@@ -30,157 +9,14 @@ Var WebbaiRb5
     !define MUI_WELCOMEPAGE_TITLE "Welcome to webbai"
   !endif
   !ifndef MUI_WELCOMEPAGE_TEXT
-    !define MUI_WELCOMEPAGE_TEXT "webbai is your AI assistant that can browse websites for you and answer questions — online and offline.$\r$\n$\r$\nSetup installs webbai and can download an AI model for offline use."
+    !define MUI_WELCOMEPAGE_TEXT "webbai is your AI assistant that can browse websites for you, see your screen and answer questions.$\r$\n$\r$\nAfter setup, pick and download any AI model right inside webbai."
   !endif
   !ifndef MUI_FINISHPAGE_TITLE
     !define MUI_FINISHPAGE_TITLE "webbai is ready"
   !endif
   !ifndef MUI_FINISHPAGE_TEXT
-    !define MUI_FINISHPAGE_TEXT "webbai has been installed on your computer.$\r$\n$\r$\nIf you chose an offline AI model, the assistant is already set to use it. You can switch models inside webbai later."
+    !define MUI_FINISHPAGE_TEXT "webbai has been installed.$\r$\n$\r$\nThe first time you ask a question, webbai will let you choose an AI model to download."
   !endif
-!macroend
-
-; Register this page directly. Relying on customPageAfterChangeDir can leave
-; the functions unreferenced in some electron-builder/NSIS combinations.
-Page custom WebbaiModelPageCreate WebbaiModelPageLeave
-
-Function WebbaiModelPageCreate
-  !insertmacro MUI_HEADER_TEXT "Choose an AI model" "Pick the AI model webbai should download and use offline."
-
-  nsDialogs::Create 1018
-  Pop $WebbaiPage
-  ${If} $WebbaiPage == error
-    Abort
-  ${EndIf}
-
-  ${NSD_CreateLabel} 0 0 100% 24u "Select the model to download now. Bigger models are smarter but take longer to download and need more disk space. You can always change this later inside webbai."
-  Pop $0
-
-  ${NSD_CreateRadioButton} 0 28u 100% 11u "Gemma 4 E4B — best all-round quality (about 9.6 GB)"
-  Pop $WebbaiRb0
-  ${NSD_CreateRadioButton} 0 41u 100% 11u "Llama 3.2 3B — fast and light (about 2 GB)"
-  Pop $WebbaiRb1
-  ${NSD_CreateRadioButton} 0 54u 100% 11u "Qwen 2.5 7B — strong general assistant (about 4.7 GB)"
-  Pop $WebbaiRb2
-  ${NSD_CreateRadioButton} 0 67u 100% 11u "Phi-4 Mini — small and quick (about 2.5 GB)"
-  Pop $WebbaiRb3
-  ${NSD_CreateRadioButton} 0 80u 100% 11u "Mistral 7B — balanced (about 4.4 GB)"
-  Pop $WebbaiRb4
-  ${NSD_CreateRadioButton} 0 93u 100% 11u "DeepSeek R1 7B — step-by-step reasoning (about 4.7 GB)"
-  Pop $WebbaiRb5
-
-  ${NSD_Check} $WebbaiRb0
-
-  ${NSD_CreateLabel} 0 110u 100% 20u "The model is downloaded from the internet during setup — it is not packed inside this installer, so the download you already made stayed small."
-  Pop $0
-
-  nsDialogs::Show
-FunctionEnd
-
-Function WebbaiModelPageLeave
-  StrCpy $WebbaiModel ""
-  StrCpy $WebbaiModelLabel ""
-  StrCpy $WebbaiModelKB "0"
-
-  ${NSD_GetState} $WebbaiRb0 $0
-  ${If} $0 == ${BST_CHECKED}
-    StrCpy $WebbaiModel "gemma4:e4b"
-    StrCpy $WebbaiModelLabel "Gemma 4 E4B"
-    StrCpy $WebbaiModelKB "10066329"
-  ${EndIf}
-  ${NSD_GetState} $WebbaiRb1 $0
-  ${If} $0 == ${BST_CHECKED}
-    StrCpy $WebbaiModel "llama3.2:3b"
-    StrCpy $WebbaiModelLabel "Llama 3.2 3B"
-    StrCpy $WebbaiModelKB "2097152"
-  ${EndIf}
-  ${NSD_GetState} $WebbaiRb2 $0
-  ${If} $0 == ${BST_CHECKED}
-    StrCpy $WebbaiModel "qwen2.5:7b"
-    StrCpy $WebbaiModelLabel "Qwen 2.5 7B"
-    StrCpy $WebbaiModelKB "4928307"
-  ${EndIf}
-  ${NSD_GetState} $WebbaiRb3 $0
-  ${If} $0 == ${BST_CHECKED}
-    StrCpy $WebbaiModel "phi4-mini"
-    StrCpy $WebbaiModelLabel "Phi-4 Mini"
-    StrCpy $WebbaiModelKB "2621440"
-  ${EndIf}
-  ${NSD_GetState} $WebbaiRb4 $0
-  ${If} $0 == ${BST_CHECKED}
-    StrCpy $WebbaiModel "mistral:7b"
-    StrCpy $WebbaiModelLabel "Mistral 7B"
-    StrCpy $WebbaiModelKB "4613734"
-  ${EndIf}
-  ${NSD_GetState} $WebbaiRb5 $0
-  ${If} $0 == ${BST_CHECKED}
-    StrCpy $WebbaiModel "deepseek-r1:7b"
-    StrCpy $WebbaiModelLabel "DeepSeek R1 7B"
-    StrCpy $WebbaiModelKB "4928307"
-  ${EndIf}
-FunctionEnd
-
-!macro customInstall
-  StrCmp $WebbaiModel "" webbai_skip_model
-  IfFileExists "$INSTDIR\resources\ollama\ollama.exe" 0 webbai_skip_model
-
-  DetailPrint "Starting the local AI runtime..."
-  Exec '"$INSTDIR\resources\ollama\ollama.exe" serve'
-  Sleep 4000
-
-  Delete "$PLUGINSDIR\webbai-pull.done"
-  DetailPrint "Downloading $WebbaiModelLabel..."
-  Exec 'cmd.exe /c ""$INSTDIR\resources\ollama\ollama.exe" pull $WebbaiModel > "$PLUGINSDIR\webbai-pull.log" 2>&1 & echo %ERRORLEVEL% > "$PLUGINSDIR\webbai-pull.done""'
-
-  FindWindow $R0 "#32770" "" $HWNDPARENT
-  GetDlgItem $R1 $R0 1004
-  SendMessage $R1 ${WEBBAI_PBM_SETRANGE32} 0 1000
-
-  StrCpy $R5 "0"
-
-webbai_wait_loop:
-  Sleep 1000
-  ${GetSize} "$PROFILE\.ollama\models" "/S=0K" $R2 $R3 $R4
-  System::Int64Op $R2 * 1000
-  Pop $R2
-  System::Int64Op $R2 / $WebbaiModelKB
-  Pop $R2
-  ${If} $R2 > 1000
-    StrCpy $R2 "1000"
-  ${EndIf}
-  SendMessage $R1 ${WEBBAI_PBM_SETPOS} $R2 0
-
-  IntOp $R6 $R2 / 10
-  ${If} $R6 != $R5
-    StrCpy $R5 $R6
-    DetailPrint "Downloading $WebbaiModelLabel — $R5%"
-  ${EndIf}
-
-  IfFileExists "$PLUGINSDIR\webbai-pull.done" 0 webbai_wait_loop
-
-  SendMessage $R1 ${WEBBAI_PBM_SETPOS} 1000 0
-
-  nsExec::ExecToStack '"$INSTDIR\resources\ollama\ollama.exe" list'
-  Pop $0
-  Pop $1
-
-  nsExec::Exec 'taskkill /F /IM ollama.exe /T'
-  Pop $2
-
-  ClearErrors
-  ${WordFind} "$1" "$WebbaiModel" "E+1{" $3
-  ${If} ${Errors}
-    DetailPrint "The $WebbaiModelLabel download did not finish — you can download it later inside webbai."
-    MessageBox MB_OK|MB_ICONINFORMATION "The $WebbaiModelLabel download did not finish. webbai still works online, and you can download a model later from inside the app." /SD IDOK
-  ${Else}
-    CreateDirectory "$APPDATA\webbai"
-    FileOpen $2 "$APPDATA\webbai\webbai-local.json" w
-    FileWrite $2 '{"model":"$WebbaiModel","label":"$WebbaiModelLabel","installedByInstaller":true}'
-    FileClose $2
-    DetailPrint "$WebbaiModelLabel is installed and ready."
-  ${EndIf}
-
-webbai_skip_model:
 !macroend
 
 !macro customUnInstall

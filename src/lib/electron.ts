@@ -6,6 +6,13 @@ export type LocalModelInfo = {
   note: string;
 };
 
+export type LocalSearchResult = {
+  name: string;
+  description: string;
+  sizes: string[];
+  capabilities: string[];
+};
+
 export type LocalStatus = {
   runtimeInstalled: boolean;
   running: boolean;
@@ -35,12 +42,13 @@ export type LocalChatChunk = {
 export type LocalBridge = {
   status: () => Promise<LocalStatus>;
   catalog: () => Promise<LocalModelInfo[]>;
+  search?: (q: string) => Promise<LocalSearchResult[]>;
   setModel: (id: string) => Promise<string>;
   pull: (id: string) => Promise<{ ok: boolean; error?: string }>;
   onPullProgress: (cb: (p: LocalPullProgress) => void) => () => void;
   chat: (payload: {
     requestId: string;
-    messages: Array<{ role: string; content: string }>;
+    messages: Array<{ role: string; content: string; images?: string[] }>;
     tools?: unknown[];
   }) => Promise<{ ok: boolean; error?: string }>;
   onChatChunk: (cb: (c: LocalChatChunk) => void) => () => void;

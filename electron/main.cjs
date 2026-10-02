@@ -266,6 +266,7 @@ ipcMain.handle('local:status', async () => {
 });
 
 ipcMain.handle('local:catalog', async () => ollama.MODELS);
+ipcMain.handle('local:search', async (_e, q) => ollama.searchModels(q));
 
 ipcMain.handle('local:set-model', async (_e, id) => ollama.setModel(id));
 
