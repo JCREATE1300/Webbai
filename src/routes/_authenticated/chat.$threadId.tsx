@@ -382,7 +382,7 @@ function ChatThread() {
       <Dialog open={setupOpen} onOpenChange={setSetupOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Local Gemma 4</DialogTitle>
+            <DialogTitle>Download an AI model</DialogTitle>
           </DialogHeader>
           <LocalModelSetup onReady={() => setLocalReady(true)} />
         </DialogContent>
@@ -642,7 +642,7 @@ function ChatThread() {
                     className="p-2 border-t flex items-center gap-2"
                     onSubmit={(e) => {
                       e.preventDefault();
-                      submit();
+                      submit({});
                     }}
                   >
                     <input
