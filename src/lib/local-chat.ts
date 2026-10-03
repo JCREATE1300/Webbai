@@ -28,11 +28,27 @@ const TOOLS = [
   },
 ];
 
+function decodeTextFile(url: string): string {
+  try {
+    const b64 = url.replace(/^data:[^,]+;base64,/, "");
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes).slice(0, 20000);
+  } catch {
+    return "";
+  }
+}
+
 function toPlainText(message: UIMessage): string {
   return message.parts
     .map((p) => {
-      const part = p as { type: string; text?: string };
-      return part.type === "text" ? (part.text ?? "") : "";
+      const part = p as { type: string; text?: string; mediaType?: string; url?: string; filename?: string };
+      if (part.type === "text") return part.text ?? "";
+      // Attached text files (txt, csv, json, code…) are inlined so the local model can read them.
+      if (part.type === "file" && part.url && !part.mediaType?.startsWith("image/")) {
+        const body = decodeTextFile(part.url);
+        return body ? `\n\n[Attached file: ${part.filename ?? "file"}]\n${body}\n` : "";
+      }
+      return "";
     })
     .join("")
     .trim();

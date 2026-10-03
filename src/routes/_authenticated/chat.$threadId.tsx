@@ -36,6 +36,7 @@ import {
   PromptInputTextarea,
   PromptInputSubmit,
   PromptInputFooter,
+  usePromptInputAttachments,
 } from "@/components/ai-elements/prompt-input";
 import { WebbaiMark } from "@/components/WebbaiMark";
 import { Shimmer } from "@/components/ai-elements/shimmer";
@@ -56,6 +57,7 @@ import {
   PanelRightOpen,
   PanelRightClose,
   Send,
+  Paperclip,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -142,11 +144,8 @@ function ChatThread() {
         if (cancelled) return;
         setLocalReady(s.ready);
         setLocalModel(s.selectedModel);
-        // First launch of the desktop app: prompt the model-size choice.
-        if (!s.selectedModel && !promptedRef.current) {
-          promptedRef.current = true;
-          setSetupOpen(true);
-        }
+        void promptedRef;
+
 
       } catch {
         /* ignore */
@@ -162,7 +161,9 @@ function ChatThread() {
 
   // Online (cloud) AI is owner-only; everyone else needs the desktop app's
   // local model.
-  const onlineLocked = !localReady && myRole !== undefined && !myRole.isOwner;
+  // Desktop users without a model can still type — sending asks them to download one.
+  const onlineLocked = !localBridge && !localReady && myRole !== undefined && !myRole.isOwner;
+  const needsModel = Boolean(localBridge) && !localReady && myRole !== undefined && !myRole.isOwner;
 
   const transport = useMemo(
     () =>
@@ -222,30 +223,46 @@ function ChatThread() {
   const [seeScreen, setSeeScreen] = useState(true);
   const [miniOpen, setMiniOpen] = useState(true);
 
-  const send = async (raw: string) => {
+  type FilePart = { type: "file"; mediaType: string; filename?: string; url: string };
+  const pendingRef = useRef<{ text: string; files: FilePart[] } | null>(null);
+
+  const send = async (raw: string, files: FilePart[] = []) => {
     const text = raw.trim();
-    if (!text || status === "streaming" || status === "submitted") return;
+    if ((!text && files.length === 0) || status === "streaming" || status === "submitted") return;
+    if (needsModel) {
+      pendingRef.current = { text, files };
+      setSetupOpen(true);
+      toast.message("Download an AI model first — your question will send when it's ready.");
+      return;
+    }
+    const parts: any[] = [];
+    if (text) parts.push({ type: "text", text });
+    parts.push(...files);
     if (canSeeScreen && (seeScreen || openedUrl)) {
       const shot = await captureScreen();
-      if (shot) {
-        sendMessage({
-          parts: [
-            { type: "text", text },
-            { type: "file", mediaType: "image/png", filename: "screen.png", url: shot },
-          ],
-        } as any);
-        return;
-      }
+      if (shot) parts.push({ type: "file", mediaType: "image/png", filename: "screen.png", url: shot });
     }
-    sendMessage({ text });
+    sendMessage({ parts } as any);
   };
 
+  // Once a model finishes downloading, send the question that was waiting.
+  useEffect(() => {
+    if (localReady && pendingRef.current) {
+      const p = pendingRef.current;
+      pendingRef.current = null;
+      setSetupOpen(false);
+      void send(p.text, p.files);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localReady]);
+
   const [input, setInput] = useState("");
-  const submit = () => {
-    const text = input.trim();
-    if (!text) return;
+  const submit = (msg: { text?: string; files?: FilePart[] }) => {
+    const text = (msg?.text ?? input).trim();
+    const files = (msg?.files ?? []) as FilePart[];
+    if (!text && files.length === 0) return;
     setInput("");
-    void send(text);
+    void send(text, files);
   };
 
 
@@ -367,7 +384,7 @@ function ChatThread() {
       <Dialog open={setupOpen} onOpenChange={setSetupOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Local Gemma 4</DialogTitle>
+            <DialogTitle>Download an AI model</DialogTitle>
           </DialogHeader>
           <LocalModelSetup onReady={() => setLocalReady(true)} />
         </DialogContent>
@@ -474,7 +491,8 @@ function ChatThread() {
                 </span>
               </div>
             )}
-            <PromptInput onSubmit={submit}>
+            <PromptInput onSubmit={submit as any} multiple>
+              <AttachmentChips />
               <PromptInputTextarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -486,23 +504,24 @@ function ChatThread() {
                 }
               />
               <PromptInputFooter className="justify-between">
-                {canSeeScreen ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={seeScreen ? "secondary" : "ghost"}
-                    className="gap-2"
-                    aria-pressed={seeScreen}
-                    onClick={() => setSeeScreen((v) => !v)}
-                    title="Attach a screenshot of what you're looking at"
-                  >
-                    <Camera className="w-4 h-4" />
-                    {seeScreen ? "Seeing your screen" : "See my screen"}
-                  </Button>
-                ) : (
-                  <span />
-                )}
-                <PromptInputSubmit status={status} disabled={!input.trim() || isLoading || onlineLocked} />
+                <div className="flex items-center gap-1">
+                  <AttachButton disabled={onlineLocked} />
+                  {canSeeScreen && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={seeScreen ? "secondary" : "ghost"}
+                      className="gap-2"
+                      aria-pressed={seeScreen}
+                      onClick={() => setSeeScreen((v) => !v)}
+                      title="Attach a screenshot of what you're looking at"
+                    >
+                      <Camera className="w-4 h-4" />
+                      {seeScreen ? "Seeing your screen" : "See my screen"}
+                    </Button>
+                  )}
+                </div>
+                <PromptInputSubmit status={status} disabled={isLoading || onlineLocked} />
               </PromptInputFooter>
             </PromptInput>
           </div>
@@ -627,7 +646,7 @@ function ChatThread() {
                     className="p-2 border-t flex items-center gap-2"
                     onSubmit={(e) => {
                       e.preventDefault();
-                      submit();
+                      submit({});
                     }}
                   >
                     <input
@@ -657,6 +676,48 @@ function ChatThread() {
 
         </section>
       )}
+    </div>
+  );
+}
+
+function AttachButton({ disabled }: { disabled?: boolean }) {
+  const attachments = usePromptInputAttachments();
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      disabled={disabled}
+      onClick={() => attachments.openFileDialog()}
+      aria-label="Attach files"
+      title="Attach files"
+    >
+      <Paperclip className="w-4 h-4" />
+    </Button>
+  );
+}
+
+function AttachmentChips() {
+  const attachments = usePromptInputAttachments();
+  if (attachments.files.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-2 px-3 pt-3 w-full">
+      {attachments.files.map((f) => (
+        <span
+          key={f.id}
+          className="inline-flex items-center gap-1 rounded-md border bg-muted px-2 py-1 text-xs max-w-[200px]"
+        >
+          <span className="truncate">{f.filename || "file"}</span>
+          <button
+            type="button"
+            aria-label={`Remove ${f.filename || "file"}`}
+            onClick={() => attachments.remove(f.id)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      ))}
     </div>
   );
 }
