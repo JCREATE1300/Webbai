@@ -489,7 +489,8 @@ function ChatThread() {
                 </span>
               </div>
             )}
-            <PromptInput onSubmit={submit}>
+            <PromptInput onSubmit={submit as any} multiple>
+              <AttachmentChips />
               <PromptInputTextarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -501,23 +502,24 @@ function ChatThread() {
                 }
               />
               <PromptInputFooter className="justify-between">
-                {canSeeScreen ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={seeScreen ? "secondary" : "ghost"}
-                    className="gap-2"
-                    aria-pressed={seeScreen}
-                    onClick={() => setSeeScreen((v) => !v)}
-                    title="Attach a screenshot of what you're looking at"
-                  >
-                    <Camera className="w-4 h-4" />
-                    {seeScreen ? "Seeing your screen" : "See my screen"}
-                  </Button>
-                ) : (
-                  <span />
-                )}
-                <PromptInputSubmit status={status} disabled={!input.trim() || isLoading || onlineLocked} />
+                <div className="flex items-center gap-1">
+                  <AttachButton disabled={onlineLocked} />
+                  {canSeeScreen && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={seeScreen ? "secondary" : "ghost"}
+                      className="gap-2"
+                      aria-pressed={seeScreen}
+                      onClick={() => setSeeScreen((v) => !v)}
+                      title="Attach a screenshot of what you're looking at"
+                    >
+                      <Camera className="w-4 h-4" />
+                      {seeScreen ? "Seeing your screen" : "See my screen"}
+                    </Button>
+                  )}
+                </div>
+                <PromptInputSubmit status={status} disabled={isLoading || onlineLocked} />
               </PromptInputFooter>
             </PromptInput>
           </div>
