@@ -36,6 +36,7 @@ import {
   PromptInputTextarea,
   PromptInputSubmit,
   PromptInputFooter,
+  usePromptInputAttachments,
 } from "@/components/ai-elements/prompt-input";
 import { WebbaiMark } from "@/components/WebbaiMark";
 import { Shimmer } from "@/components/ai-elements/shimmer";
@@ -56,6 +57,7 @@ import {
   PanelRightOpen,
   PanelRightClose,
   Send,
+  Paperclip,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -674,6 +676,48 @@ function ChatThread() {
 
         </section>
       )}
+    </div>
+  );
+}
+
+function AttachButton({ disabled }: { disabled?: boolean }) {
+  const attachments = usePromptInputAttachments();
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      disabled={disabled}
+      onClick={() => attachments.openFileDialog()}
+      aria-label="Attach files"
+      title="Attach files"
+    >
+      <Paperclip className="w-4 h-4" />
+    </Button>
+  );
+}
+
+function AttachmentChips() {
+  const attachments = usePromptInputAttachments();
+  if (attachments.files.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-2 px-3 pt-3 w-full">
+      {attachments.files.map((f) => (
+        <span
+          key={f.id}
+          className="inline-flex items-center gap-1 rounded-md border bg-muted px-2 py-1 text-xs max-w-[200px]"
+        >
+          <span className="truncate">{f.filename || "file"}</span>
+          <button
+            type="button"
+            aria-label={`Remove ${f.filename || "file"}`}
+            onClick={() => attachments.remove(f.id)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      ))}
     </div>
   );
 }
