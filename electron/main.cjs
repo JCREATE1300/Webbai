@@ -174,7 +174,7 @@ function setupAutoUpdater() {
   autoUpdater.logger.transports.file.level = 'info';
 
   // Check for updates when app starts
-  autoUpdater.checkForUpdatesAndNotify();
+  autoUpdater.checkForUpdatesAndNotify().catch((e) => log.warn('update check failed', e));
 
   // Listen for update events
   autoUpdater.on('update-available', () => {
@@ -193,6 +193,9 @@ function setupAutoUpdater() {
 
   autoUpdater.on('error', (err) => {
     log.error('Update error:', err);
+    const msg = String((err && err.message) || err);
+    // No release published yet / offline: not worth alarming the user.
+    if (/404|latest\.yml|ENOTFOUND|ERR_INTERNET|net::|No published versions/i.test(msg)) return;
     if (mainWindow) {
       mainWindow.webContents.send('update-error', err.message);
     }
@@ -302,8 +305,12 @@ ipcMain.handle('update:restart', () => {
 });
 
 ipcMain.handle('update:check', async () => {
-  const result = await autoUpdater.checkForUpdates();
-  return result;
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return result ? { version: result.updateInfo && result.updateInfo.version } : null;
+  } catch (e) {
+    return null;
+  }
 });
 
 const gotLock = app.requestSingleInstanceLock();

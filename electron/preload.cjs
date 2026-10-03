@@ -152,4 +152,3 @@ if (document.readyState === 'loading') {
 } else {
   injectOverlay();
 }
-setInterval(injectOverlay, 2000);
