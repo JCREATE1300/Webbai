@@ -142,11 +142,8 @@ function ChatThread() {
         if (cancelled) return;
         setLocalReady(s.ready);
         setLocalModel(s.selectedModel);
-        // First launch of the desktop app: prompt the model-size choice.
-        if (!s.selectedModel && !promptedRef.current) {
-          promptedRef.current = true;
-          setSetupOpen(true);
-        }
+        void promptedRef;
+
 
       } catch {
         /* ignore */
@@ -162,7 +159,9 @@ function ChatThread() {
 
   // Online (cloud) AI is owner-only; everyone else needs the desktop app's
   // local model.
-  const onlineLocked = !localReady && myRole !== undefined && !myRole.isOwner;
+  // Desktop users without a model can still type — sending asks them to download one.
+  const onlineLocked = !localBridge && !localReady && myRole !== undefined && !myRole.isOwner;
+  const needsModel = Boolean(localBridge) && !localReady && myRole !== undefined && !myRole.isOwner;
 
   const transport = useMemo(
     () =>
@@ -222,30 +221,46 @@ function ChatThread() {
   const [seeScreen, setSeeScreen] = useState(true);
   const [miniOpen, setMiniOpen] = useState(true);
 
-  const send = async (raw: string) => {
+  type FilePart = { type: "file"; mediaType: string; filename?: string; url: string };
+  const pendingRef = useRef<{ text: string; files: FilePart[] } | null>(null);
+
+  const send = async (raw: string, files: FilePart[] = []) => {
     const text = raw.trim();
-    if (!text || status === "streaming" || status === "submitted") return;
+    if ((!text && files.length === 0) || status === "streaming" || status === "submitted") return;
+    if (needsModel) {
+      pendingRef.current = { text, files };
+      setSetupOpen(true);
+      toast.message("Download an AI model first — your question will send when it's ready.");
+      return;
+    }
+    const parts: any[] = [];
+    if (text) parts.push({ type: "text", text });
+    parts.push(...files);
     if (canSeeScreen && (seeScreen || openedUrl)) {
       const shot = await captureScreen();
-      if (shot) {
-        sendMessage({
-          parts: [
-            { type: "text", text },
-            { type: "file", mediaType: "image/png", filename: "screen.png", url: shot },
-          ],
-        } as any);
-        return;
-      }
+      if (shot) parts.push({ type: "file", mediaType: "image/png", filename: "screen.png", url: shot });
     }
-    sendMessage({ text });
+    sendMessage({ parts } as any);
   };
 
+  // Once a model finishes downloading, send the question that was waiting.
+  useEffect(() => {
+    if (localReady && pendingRef.current) {
+      const p = pendingRef.current;
+      pendingRef.current = null;
+      setSetupOpen(false);
+      void send(p.text, p.files);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localReady]);
+
   const [input, setInput] = useState("");
-  const submit = () => {
-    const text = input.trim();
-    if (!text) return;
+  const submit = (msg: { text?: string; files?: FilePart[] }) => {
+    const text = (msg?.text ?? input).trim();
+    const files = (msg?.files ?? []) as FilePart[];
+    if (!text && files.length === 0) return;
     setInput("");
-    void send(text);
+    void send(text, files);
   };
 
 
