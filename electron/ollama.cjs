@@ -7,14 +7,26 @@ const fs = require('fs');
 const HOST = 'http://127.0.0.1:11434';
 
 const MODELS = [
+  { id: 'llama3.2', label: 'Llama 3.2', size: '2.0 GB', ctx: '128K', note: 'Fast general-purpose model (Meta)' },
   { id: 'llama3.2:3b', label: 'Llama 3.2 3B', size: '2.0 GB', ctx: '128K', note: 'Small and fast (Meta)' },
+  { id: 'llama3.1', label: 'Llama 3.1', size: '4.7 GB', ctx: '128K', note: 'Popular general-purpose model (Meta)' },
+  { id: 'llama3.1:8b', label: 'Llama 3.1 8B', size: '4.7 GB', ctx: '128K', note: 'Balanced reasoning and speed (Meta)' },
   { id: 'qwen2.5:7b', label: 'Qwen 2.5 7B', size: '4.7 GB', ctx: '128K', note: 'Strong all-rounder (Alibaba)' },
-  { id: 'phi4-mini', label: 'Phi-4 Mini', size: '2.5 GB', ctx: '128K', note: 'Compact reasoning (Microsoft)' },
-  { id: 'mistral:7b', label: 'Mistral 7B', size: '4.4 GB', ctx: '32K', note: 'Classic open model' },
-  { id: 'deepseek-r1:7b', label: 'DeepSeek R1 7B', size: '4.7 GB', ctx: '128K', note: 'Thinks step by step' },
-  { id: 'llava:7b', label: 'LLaVA 7B', size: '4.7 GB', ctx: '4K', note: 'Can see images & screenshots' },
+  { id: 'qwen2.5-coder:7b', label: 'Qwen 2.5 Coder 7B', size: '4.7 GB', ctx: '128K', note: 'Code-focused model (Alibaba)' },
   { id: 'qwen2.5vl:7b', label: 'Qwen 2.5 VL 7B', size: '6.0 GB', ctx: '128K', note: 'Vision — reads your screen well' },
+  { id: 'phi4-mini', label: 'Phi-4 Mini', size: '2.5 GB', ctx: '128K', note: 'Compact reasoning (Microsoft)' },
+  { id: 'phi4', label: 'Phi-4', size: '9.0 GB', ctx: '128K', note: 'Stronger reasoning model (Microsoft)' },
+  { id: 'mistral:7b', label: 'Mistral 7B', size: '4.4 GB', ctx: '32K', note: 'Classic open model' },
+  { id: 'mistral-nemo', label: 'Mistral Nemo', size: '4.6 GB', ctx: '128K', note: 'Modern Mistral model' },
+  { id: 'deepseek-r1:7b', label: 'DeepSeek R1 7B', size: '4.7 GB', ctx: '128K', note: 'Thinks step by step' },
+  { id: 'deepseek-coder-v2:16b', label: 'DeepSeek Coder V2 16B', size: '9.0 GB', ctx: '128K', note: 'Code generation and reasoning' },
+  { id: 'llava:7b', label: 'LLaVA 7B', size: '4.7 GB', ctx: '4K', note: 'Can see images & screenshots' },
+  { id: 'llava:13b', label: 'LLaVA 13B', size: '8.0 GB', ctx: '4K', note: 'Bigger multimodal model' },
+  { id: 'granite3.2:8b', label: 'Granite 3.2 8B', size: '4.8 GB', ctx: '128K', note: 'Enterprise-focused model (IBM)' },
+  { id: 'olmo2:7b', label: 'OLMo 2 7B', size: '4.7 GB', ctx: '128K', note: 'Open-language-model family' },
+  { id: 'tinyllama', label: 'TinyLlama', size: '637 MB', ctx: '4K', note: 'Very small and lightweight' },
   { id: 'gemma3:4b', label: 'Gemma 3 4B', size: '3.3 GB', ctx: '128K', note: 'Sees images, light (Google)' },
+  { id: 'gemma3:12b', label: 'Gemma 3 12B', size: '7.9 GB', ctx: '128K', note: 'Balanced multimodal model (Google)' },
   { id: 'gemma4:e2b', label: 'Gemma 4 E2B', size: '7.2 GB', ctx: '128K', note: 'Lightest — best for 8 GB RAM laptops' },
   { id: 'gemma4:e4b', label: 'Gemma 4 E4B', size: '9.6 GB', ctx: '128K', note: 'Balanced default' },
   { id: 'gemma4:12b', label: 'Gemma 4 12B', size: '7.6 GB', ctx: '256K', note: 'Smarter, 256K context' },
@@ -24,40 +36,79 @@ const MODELS = [
 
 let serverProc = null;
 
-// Search the full Ollama library (every model it offers).
+function normalizeModelName(name) {
+  return String(name || '')
+    .trim()
+    .replace(/^ollama\//i, '')
+    .replace(/:latest$/i, '');
+}
+
+function pushModelResult(out, name, description = '', sizes = [], capabilities = []) {
+  const normalized = normalizeModelName(name);
+  if (!normalized || out.some((item) => normalizeModelName(item.name) === normalized)) return;
+  out.push({
+    name: normalized,
+    description: description || 'Ollama model',
+    sizes: [...new Set((sizes || []).map((s) => String(s).trim()).filter(Boolean))],
+    capabilities: [...new Set((capabilities || []).map((s) => String(s).trim()).filter(Boolean))],
+  });
+}
+
+// Search the installed models and the broader Ollama catalog. The public Ollama
+// library pages can be inconsistent, so we fall back to the curated catalog and
+// exact-name entries instead of assuming a Gemma-only result set.
 async function searchModels(query) {
   const q = String(query || '').trim();
+  const out = [];
+
   try {
-    const url = q ? `https://ollama.com/search?q=${encodeURIComponent(q)}` : 'https://ollama.com/library';
-    const res = await fetch(url, { headers: { 'User-Agent': 'webbai' } });
-    if (!res.ok) throw new Error(String(res.status));
-    const html = await res.text();
-    const seen = new Set();
-    const out = [];
-    const re = /href="\/library\/([a-zA-Z0-9._-]+)"/g;
-    let m;
-    while ((m = re.exec(html))) {
-      const name = m[1];
-      if (seen.has(name)) continue;
-      seen.add(name);
-      // grab a description + sizes near the link
-      const chunk = html.slice(m.index, m.index + 4000);
-      const desc = (chunk.match(/<p[^>]*>([^<]{10,300})<\/p>/) || [])[1] || '';
-      const sizes = Array.from(chunk.matchAll(/x-test-size[^>]*>([^<]+)</g)).map((x) => x[1].trim());
-      const caps = Array.from(chunk.matchAll(/x-test-capability[^>]*>([^<]+)</g)).map((x) => x[1].trim());
-      out.push({ name, description: desc.trim(), sizes, capabilities: caps });
-      if (out.length >= 60) break;
-    }
-    return out;
+    const installed = await installedModels();
+    for (const name of installed) pushModelResult(out, name, 'Installed locally', [], ['local']);
   } catch {
-    const lq = q.toLowerCase();
-    return MODELS.filter((x) => !lq || x.id.includes(lq) || x.label.toLowerCase().includes(lq)).map((x) => ({
-      name: x.id,
-      description: x.note,
-      sizes: [],
-      capabilities: [],
-    }));
+    // ignore if the local runtime is not running yet
   }
+
+  const matches = MODELS.filter((x) => {
+    if (!q) return true;
+    const needle = q.toLowerCase();
+    return x.id.toLowerCase().includes(needle) || x.label.toLowerCase().includes(needle) || x.note.toLowerCase().includes(needle);
+  });
+  for (const x of matches) pushModelResult(out, x.id, x.note, [], []);
+
+  if (q) {
+    try {
+      const url = `https://ollama.com/search?q=${encodeURIComponent(q)}`;
+      const res = await fetch(url, { headers: { 'User-Agent': 'webbai' } });
+      if (res.ok) {
+        const html = await res.text();
+        const names = new Set();
+        for (const match of html.matchAll(/(?:href|data-name|data-model-name|modelName)[^\n\r"'<>:=]*["']?\s*[:=]\s*["']([^"'<>\s]+)["']/gi)) {
+          const value = match[1];
+          if (!value || /^(?:https?:|\/|#)/.test(value)) continue;
+          names.add(value);
+        }
+        for (const match of html.matchAll(/\/library\/([a-zA-Z0-9._:-]+)/g)) {
+          names.add(match[1]);
+        }
+        for (const name of [...names]) {
+          if (!/^[a-zA-Z0-9._:-]+$/.test(name)) continue;
+          pushModelResult(out, name, 'Available in the Ollama library', [], []);
+        }
+      }
+    } catch {
+      // ignore library scrape errors and continue to the fallback catalog below
+    }
+  }
+
+  if (q && /^[a-zA-Z0-9._:-]+$/.test(q)) {
+    pushModelResult(out, q, 'Download this exact model name', [], []);
+  }
+
+  if (!q && out.length === 0) {
+    for (const x of MODELS) pushModelResult(out, x.id, x.note, [], []);
+  }
+
+  return out.slice(0, 80);
 }
 
 function settingsFile() {
@@ -172,7 +223,6 @@ async function status() {
     selectedModel: selected,
     ready: Boolean(running && selected && installed(selected)),
   };
-
 }
 
 function setModel(id) {
