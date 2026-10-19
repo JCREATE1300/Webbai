@@ -41,7 +41,7 @@ const FEATURES = [
   {
     icon: MessagesSquare,
     title: "Chat with an AI assistant",
-    body: "Ask questions in threads that are saved to your account, so you can pick a conversation back up on any device.",
+    body: "Ask questions in threads that are saved locally in the app so you can pick up a conversation from the same device.",
   },
   {
     icon: Globe,
@@ -56,7 +56,7 @@ const FEATURES = [
   {
     icon: Download,
     title: "Windows app included",
-    body: "Sign in and download the Windows build from the sidebar to get the desktop version with the on-page assistant.",
+    body: "Use the desktop app to keep browsing and chatting in a local-first workflow with full in-app browser support.",
   },
 ];
 
@@ -75,12 +75,12 @@ function Landing() {
             appears right beside the conversation, ready to read, summarise and act on.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link to="/auth">
-              <Button size="lg">Start chatting free</Button>
+            <Link to="/chat">
+              <Button size="lg">Open webbai</Button>
             </Link>
-            <Link to="/auth">
+            <Link to="/chat">
               <Button size="lg" variant="outline">
-                <Download className="h-4 w-4" /> Get the Windows app
+                <Download className="h-4 w-4" /> Use the app
               </Button>
             </Link>
           </div>
@@ -106,14 +106,14 @@ function Landing() {
             How it works
           </h2>
           <ol className="mt-6 space-y-3 text-sm text-muted-foreground">
-            <li>1. Create an account or sign in with Google.</li>
-            <li>2. Start a thread and ask a question, or say “open” followed by a site.</li>
+            <li>1. Open the app and start a thread.</li>
+            <li>2. Ask a question, or say “open” followed by a site.</li>
             <li>3. The site opens in the in-app browser panel — toggle fullscreen to focus on it.</li>
-            <li>4. Install the Windows app to get the on-page assistant that can click and type.</li>
+            <li>4. Keep using the desktop app for local-first browsing and AI assistance.</li>
           </ol>
           <div className="mt-8">
-            <Link to="/auth">
-              <Button>Open webbai</Button>
+            <Link to="/chat">
+              <Button>Launch webbai</Button>
             </Link>
           </div>
         </section>

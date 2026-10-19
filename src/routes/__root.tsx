@@ -10,7 +10,6 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { DesktopAuthListener } from "@/components/DesktopAuthListener";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -87,8 +86,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "webbai — AI chat with in-app browser" },
       { name: "twitter:description", content: "Chat with an AI assistant that opens websites right inside the app. Available on the web and as a downloadable Windows app." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6e1193df-110c-41c7-86f3-18176768bc4b/id-preview-9d2baaed--a142bf7b-795a-4689-a8be-791b339532c6.lovable.app-1783446001934.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6e1193df-110c-41c7-86f3-18176768bc4b/id-preview-9d2baaed--a142bf7b-795a-4689-a8be-791b339532c6.lovable.app-1783446001934.png" },
     ],
     links: [
       {
@@ -123,9 +120,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
-      <DesktopAuthListener />
       <UpdateNotification />
     </QueryClientProvider>
   );

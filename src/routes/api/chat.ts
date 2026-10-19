@@ -1,48 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type { UIMessage } from "ai";
-
-type ChatBody = { messages?: unknown; threadId?: string };
 
 export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const body = (await request.json()) as ChatBody;
+        const body = (await request.json()) as { messages?: unknown; threadId?: string };
         if (!Array.isArray(body.messages)) {
           return new Response("Messages required", { status: 400 });
-        }
-
-        const authHeader = request.headers.get("authorization");
-
-        // The online (cloud) AI is reserved for the owner. Everyone else uses
-        // the local model in the downloaded desktop app.
-        if (!authHeader) {
-          return new Response("Sign in required", { status: 401 });
-        }
-        {
-          const { createClient } = await import("@supabase/supabase-js");
-          const authClient = createClient(
-            process.env.SUPABASE_URL!,
-            process.env.SUPABASE_PUBLISHABLE_KEY!,
-            {
-              global: { headers: { Authorization: authHeader } },
-              auth: { persistSession: false, autoRefreshToken: false },
-            },
-          );
-          const { data: userData } = await authClient.auth.getUser();
-          const uid = userData.user?.id;
-          if (!uid) return new Response("Sign in required", { status: 401 });
-          const { data: roleRows } = await authClient
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", uid)
-            .eq("role", "owner");
-          if (!roleRows || roleRows.length === 0) {
-            return new Response(
-              "The online assistant is owner-only. Download the webbai desktop app to chat with the local AI model.",
-              { status: 403 },
-            );
-          }
         }
 
         const [{ convertToModelMessages, streamText, tool, stepCountIs }, { z }, gateway] =
@@ -61,11 +25,7 @@ export const Route = createFileRoute("/api/chat")({
         const key = await pickOpenRouterKey();
         if (!key) return new Response("Missing OPENROUTER_API_KEY", { status: 500 });
 
-        const threadId = body.threadId;
-
         const messages = body.messages as UIMessage[];
-
-        // If the newest user turn carries a screenshot, use a vision model.
         const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
         const hasImage = (lastUserMsg?.parts ?? []).some(
           (p) =>
@@ -80,7 +40,7 @@ export const Route = createFileRoute("/api/chat")({
           model,
           system: `You are a helpful AI assistant embedded in a desktop-style app.
 
-You have a special tool called \`open_website\` that opens a URL inside an in-app browser panel next to the chat. Call it whenever the user asks you to open, show, visit, load, or pull up a website. Always pass a full https:// URL. After calling the tool, briefly tell the user what you opened.
+You have a special tool called \`open_website\` that opens a URL inside an in-app browser panel next to the chat. Call it whenever the user asks you to open, show, visit, load, or pull up a website.
 
 Format regular replies using Markdown.
 
@@ -102,75 +62,9 @@ If the user's message includes a screenshot, it is a live capture of the screen 
           },
         });
 
-        const response = result.toUIMessageStreamResponse({
+        return result.toUIMessageStreamResponse({
           originalMessages: messages,
-          onFinish: async ({ messages: finalMessages }) => {
-            if (!threadId || !authHeader) return;
-            try {
-              const { createClient } = await import("@supabase/supabase-js");
-              const supabase = createClient(
-                process.env.SUPABASE_URL!,
-                process.env.SUPABASE_PUBLISHABLE_KEY!,
-                {
-                  global: { headers: { Authorization: authHeader } },
-                  auth: { persistSession: false, autoRefreshToken: false },
-                },
-              );
-              const { data: userData } = await supabase.auth.getUser();
-              const userId = userData.user?.id;
-              if (!userId) return;
-
-              // Persist the last user message and the new assistant message(s)
-              const lastUser = [...messages].reverse().find((m) => m.role === "user");
-              const newAssistants = finalMessages.filter((m) => m.role === "assistant");
-
-              const rows: Array<{
-                thread_id: string;
-                user_id: string;
-                role: string;
-                parts: unknown;
-              }> = [];
-              if (lastUser) {
-                // Screenshots are only needed to answer the current question —
-                // never store them in chat history. Keep the text and drop the
-                // image data so it is deleted as soon as it has served its turn.
-                const rawParts = Array.isArray(lastUser.parts) ? lastUser.parts : [];
-                const cleanedParts = (rawParts as Array<{ type?: string; mediaType?: string }>).flatMap(
-                  (p) => {
-                    const isImage =
-                      p?.type === "file" && String(p?.mediaType ?? "").startsWith("image/");
-                    return isImage ? [] : [p];
-                  },
-                );
-                rows.push({
-                  thread_id: threadId,
-                  user_id: userId,
-                  role: "user",
-                  parts: cleanedParts,
-                });
-              }
-              for (const m of newAssistants) {
-                rows.push({
-                  thread_id: threadId,
-                  user_id: userId,
-                  role: m.role,
-                  parts: m.parts,
-                });
-              }
-              if (rows.length) {
-                await supabase.from("messages").insert(rows);
-              }
-              await supabase
-                .from("threads")
-                .update({ updated_at: new Date().toISOString() })
-                .eq("id", threadId);
-            } catch (err) {
-              console.error("Persist chat error", err);
-            }
-          },
         });
-
-        return response;
       },
     },
   },

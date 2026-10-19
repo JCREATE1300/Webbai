@@ -5,14 +5,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import ReactMarkdown from "react-markdown";
-import { supabase } from "@/integrations/supabase/client";
 import {
   createThread,
   deleteThread,
   getThreadMessages,
   listThreads,
 } from "@/lib/threads.functions";
-import { getMyRole } from "@/lib/owner.functions";
 import { getWindowsDownloadUrl } from "@/lib/downloads.functions";
 import { getLocalBridge, getElectron, captureScreen } from "@/lib/electron";
 import { createLocalChatFetch } from "@/lib/local-chat";
@@ -43,11 +41,9 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import {
   Plus,
   Trash2,
-  LogOut,
   Globe,
   Download,
   MessageSquare,
-  Shield,
   X,
   Maximize2,
   Minimize2,
@@ -97,23 +93,9 @@ function ChatThread() {
   const deleteFn = useServerFn(deleteThread);
   const getMsgsFn = useServerFn(getThreadMessages);
 
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setToken(data.session?.access_token ?? null);
-    });
-  }, []);
-
   const { data: threads = [] } = useQuery({
     queryKey: ["threads"],
     queryFn: () => listFn(),
-  });
-
-  const roleFn = useServerFn(getMyRole);
-  const { data: myRole } = useQuery({
-    queryKey: ["my-role"],
-    queryFn: () => roleFn(),
   });
 
   const { data: initialMessages, isLoading: msgsLoading } = useQuery({
@@ -128,7 +110,6 @@ function ChatThread() {
     },
   });
 
-  // Local Gemma 4 (desktop app) — preferred whenever it's installed & ready.
   const localBridge = getLocalBridge();
   const [localReady, setLocalReady] = useState(false);
   const [localModel, setLocalModel] = useState<string | null>(null);
@@ -145,8 +126,6 @@ function ChatThread() {
         setLocalReady(s.ready);
         setLocalModel(s.selectedModel);
         void promptedRef;
-
-
       } catch {
         /* ignore */
       }
@@ -159,11 +138,8 @@ function ChatThread() {
     };
   }, [localBridge]);
 
-  // Online (cloud) AI is owner-only; everyone else needs the desktop app's
-  // local model.
-  // Desktop users without a model can still type — sending asks them to download one.
-  const onlineLocked = !localBridge && !localReady && myRole !== undefined && !myRole.isOwner;
-  const needsModel = Boolean(localBridge) && !localReady && myRole !== undefined && !myRole.isOwner;
+  const onlineLocked = false;
+  const needsModel = false;
 
   const transport = useMemo(
     () =>
@@ -175,10 +151,9 @@ function ChatThread() {
           })
         : new DefaultChatTransport({
             api: "/api/chat",
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
             body: { threadId },
           }),
-    [token, threadId, localReady],
+    [threadId, localReady],
   );
 
   const { messages, sendMessage, status } = useChat({
@@ -191,8 +166,6 @@ function ChatThread() {
     },
   });
 
-
-  // Embedded in-app browser panel
   const [openedUrl, setOpenedUrl] = useState<string | null>(null);
   const [openedTitle, setOpenedTitle] = useState<string>("");
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -215,10 +188,6 @@ function ChatThread() {
     }
   }, [messages]);
 
-  // Screen vision (desktop app only): whenever a website is open in the app,
-  // automatically screenshot it with every question; otherwise the
-  // "See my screen" toggle controls it. Screenshots are never saved — the
-  // server reads them for that answer and discards them.
   const canSeeScreen = Boolean(getElectron()?.captureScreen);
   const [seeScreen, setSeeScreen] = useState(true);
   const [miniOpen, setMiniOpen] = useState(true);
@@ -245,7 +214,6 @@ function ChatThread() {
     sendMessage({ parts } as any);
   };
 
-  // Once a model finishes downloading, send the question that was waiting.
   useEffect(() => {
     if (localReady && pendingRef.current) {
       const p = pendingRef.current;
@@ -265,7 +233,6 @@ function ChatThread() {
     void send(text, files);
   };
 
-
   const newChat = async () => {
     const t = await createFn();
     qc.invalidateQueries({ queryKey: ["threads"] });
@@ -283,11 +250,6 @@ function ChatThread() {
         navigate({ to: "/chat" });
       }
     }
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
   };
 
   const downloadFn = useServerFn(getWindowsDownloadUrl);
@@ -310,7 +272,6 @@ function ChatThread() {
 
   return (
     <div className="h-screen flex bg-background text-foreground overflow-hidden">
-      {/* Sidebar */}
       <aside
         aria-labelledby="threads-heading"
         className="w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground flex flex-col"
@@ -352,13 +313,6 @@ function ChatThread() {
           ))}
         </div>
         <div className="p-3 border-t border-sidebar-border space-y-2">
-          {myRole?.isOwner && (
-            <Link to="/owner" className="block">
-              <Button variant="outline" size="sm" className="w-full justify-start">
-                <Shield className="w-4 h-4" /> Owner Panel
-              </Button>
-            </Link>
-          )}
           {localBridge && (
             <Button
               variant="outline"
@@ -375,9 +329,6 @@ function ChatThread() {
           <Button variant="outline" size="sm" className="w-full justify-start" onClick={downloadWindows}>
             <Download className="w-4 h-4" /> Download for Windows
           </Button>
-          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={signOut}>
-            <LogOut className="w-4 h-4" /> Sign out
-          </Button>
         </div>
       </aside>
 
@@ -390,8 +341,6 @@ function ChatThread() {
         </DialogContent>
       </Dialog>
 
-
-      {/* Chat pane */}
       <main aria-labelledby="chat-heading" className="flex-1 flex flex-col min-w-0">
         <h2 id="chat-heading" className="sr-only">Conversation with the webbai assistant</h2>
         <Conversation className="flex-1">
@@ -486,8 +435,7 @@ function ChatThread() {
               <div className="mb-3 rounded-lg border bg-muted/50 px-4 py-3 text-sm text-muted-foreground flex items-center gap-3">
                 <Download className="w-4 h-4 shrink-0" />
                 <span>
-                  The online assistant is reserved for the owner. Download the webbai
-                  desktop app to chat with the AI model that runs on your own computer.
+                  Use the desktop app to chat with the local model.
                 </span>
               </div>
             )}
@@ -528,7 +476,6 @@ function ChatThread() {
         </div>
       </main>
 
-      {/* In-app browser panel */}
       {openedUrl && (
         <section
           className={
@@ -575,7 +522,7 @@ function ChatThread() {
                 setIsFullscreen(false);
               }}
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </Button>
           </div>
           <div className="flex-1 flex min-h-0">
@@ -587,7 +534,6 @@ function ChatThread() {
               referrerPolicy="no-referrer"
             />
 
-            {/* Mini assistant side tab — only while the site is fullscreen */}
             {isFullscreen && (
               miniOpen ? (
                 <aside className="w-[340px] shrink-0 border-l bg-background flex flex-col">
@@ -610,9 +556,7 @@ function ChatThread() {
                       <div
                         key={m.id}
                         className={`text-xs rounded-lg px-3 py-2 ${
-                          m.role === "user"
-                            ? "bg-primary/10 ml-6"
-                            : "bg-muted mr-6"
+                          m.role === "user" ? "bg-primary/10 ml-6" : "bg-muted mr-6"
                         }`}
                       >
                         {m.parts.map((part, i) => {
@@ -673,7 +617,6 @@ function ChatThread() {
               )
             )}
           </div>
-
         </section>
       )}
     </div>

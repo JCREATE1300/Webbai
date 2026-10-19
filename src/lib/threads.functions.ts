@@ -1,62 +1,82 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export const listThreads = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("threads")
-      .select("id,title,updated_at")
-      .order("updated_at", { ascending: false });
-    if (error) throw error;
-    return data ?? [];
-  });
+type ThreadRecord = {
+  id: string;
+  title: string;
+  updated_at: string;
+};
 
-export const createThread = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("threads")
-      .insert({ user_id: context.userId, title: "New chat" })
-      .select("id")
-      .single();
-    if (error) throw error;
-    return data;
-  });
+type MessageRecord = {
+  id: string;
+  thread_id: string;
+  user_id: string;
+  role: string;
+  parts: unknown;
+  created_at: string;
+};
+
+const threadStore = new Map<string, ThreadRecord>();
+const messageStore = new Map<string, MessageRecord[]>();
+
+const makeLocalId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
+const normalizeThread = (thread: ThreadRecord) => ({
+  id: thread.id,
+  title: thread.title,
+  updated_at: thread.updated_at,
+});
+
+export const listThreads = createServerFn({ method: "GET" }).handler(async () => {
+  return [...threadStore.values()]
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    .map(normalizeThread);
+});
+
+export const createThread = createServerFn({ method: "POST" }).handler(async () => {
+  const id = makeLocalId();
+  const now = new Date().toISOString();
+  const thread = { id, title: "New chat", updated_at: now };
+  threadStore.set(id, thread);
+  messageStore.set(id, []);
+  return { id, title: thread.title, updated_at: thread.updated_at };
+});
 
 export const deleteThread = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context, data }) => {
-    const { error } = await context.supabase.from("threads").delete().eq("id", data.id);
-    if (error) throw error;
+  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    threadStore.delete(data.id);
+    messageStore.delete(data.id);
     return { ok: true };
   });
 
 export const renameThread = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
-    z.object({ id: z.string().uuid(), title: z.string().min(1).max(100) }).parse(d),
+    z.object({ id: z.string(), title: z.string().min(1).max(100) }).parse(d),
   )
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context, data }) => {
-    const { error } = await context.supabase
-      .from("threads")
-      .update({ title: data.title })
-      .eq("id", data.id);
-    if (error) throw error;
+  .handler(async ({ data }) => {
+    const existing = threadStore.get(data.id);
+    if (!existing) {
+      return { ok: false };
+    }
+
+    const updated = { ...existing, title: data.title, updated_at: new Date().toISOString() };
+    threadStore.set(data.id, updated);
     return { ok: true };
   });
 
 export const getThreadMessages = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ threadId: z.string().uuid() }).parse(d))
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context, data }) => {
-    const { data: rows, error } = await context.supabase
-      .from("messages")
-      .select("id,role,parts,created_at")
-      .eq("thread_id", data.threadId)
-      .order("created_at", { ascending: true });
-    if (error) throw error;
-    return (rows ?? []) as Array<{ id: string; role: string; parts: any; created_at: string }>;
+  .inputValidator((d: unknown) => z.object({ threadId: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    return (messageStore.get(data.threadId) ?? []) as Array<{
+      id: string;
+      role: string;
+      parts: any;
+      created_at: string;
+    }>;
   });
