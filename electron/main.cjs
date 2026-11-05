@@ -173,15 +173,25 @@ function setupAutoUpdater() {
   autoUpdater.logger = log;
   autoUpdater.logger.transports.file.level = 'info';
 
-  // Check for updates when app starts
-  autoUpdater.checkForUpdatesAndNotify().catch((e) => log.warn('update check failed', e));
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
 
-  // Listen for update events
-  autoUpdater.on('update-available', () => {
-    log.info('Update available');
+  autoUpdater.on('update-available', (info) => {
+    log.info('Update available', info && info.version);
     if (mainWindow) {
-      mainWindow.webContents.send('update-available');
+      mainWindow.webContents.send('update-available', { version: info && info.version });
     }
+  });
+
+  autoUpdater.on('download-progress', (p) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('update-progress', { percent: Math.round((p && p.percent) || 0) });
+    }
+  });
+
+  // Quietly check once the page has loaded so the banner can receive the event.
+  mainWindow.webContents.once('did-finish-load', () => {
+    autoUpdater.checkForUpdates().catch((e) => log.warn('update check failed', e));
   });
 
   autoUpdater.on('update-downloaded', () => {
@@ -301,7 +311,17 @@ ipcMain.handle('local:chat', async (event, { requestId, messages, tools }) => {
 
 // IPC for updates
 ipcMain.handle('update:restart', () => {
-  autoUpdater.quitAndInstall();
+  autoUpdater.quitAndInstall(true, true);
+});
+
+ipcMain.handle('update:download', async () => {
+  try {
+    await autoUpdater.downloadUpdate();
+    return true;
+  } catch (e) {
+    log.warn('update download failed', e);
+    return false;
+  }
 });
 
 ipcMain.handle('update:check', async () => {

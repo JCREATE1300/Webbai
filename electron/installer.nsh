@@ -23,7 +23,7 @@
   nsExec::Exec 'taskkill /F /IM ollama.exe /T'
   Pop $0
   MessageBox MB_YESNO|MB_ICONQUESTION "Also remove downloaded AI models (frees several GB)?" /SD IDNO IDNO webbai_keep_models
-  RMDir /r "$PROFILE\.ollama\models"
+  RMDir /r "$LOCALAPPDATA\webbai\models"
+  Delete "$LOCALAPPDATA\webbai\webbai-local.json"
 webbai_keep_models:
-  Delete "$APPDATA\webbai\webbai-local.json"
 !macroend

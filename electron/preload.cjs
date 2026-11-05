@@ -26,7 +26,9 @@ contextBridge.exposeInMainWorld('electron', {
   },
 
   // Update APIs
-  onUpdateAvailable: (callback) => ipcRenderer.on('update-available', callback),
+  onUpdateAvailable: (callback) => ipcRenderer.on('update-available', (_, info) => callback(info || {})),
+  onDownloadProgress: (callback) => ipcRenderer.on('update-progress', (_, p) => callback(p || {})),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
   onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', callback),
   onUpdateError: (callback) => ipcRenderer.on('update-error', (_, message) => callback(message)),
   checkForUpdates: () => ipcRenderer.invoke('update:check'),

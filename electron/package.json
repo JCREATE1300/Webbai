@@ -34,6 +34,7 @@
     ],
     "win": {
       "icon": "icon.ico",
+      "executableName": "webbai",
       "target": [
         {
           "target": "nsis",
