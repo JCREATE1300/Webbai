@@ -8,7 +8,20 @@ export function DesktopAuthListener() {
   const router = useRouter();
   useEffect(() => {
     const api = getElectron();
-    if (!api?.onAuthTokens) return;
+    if (!api) return;
+    // Desktop skips sign-in: start a quiet guest session and open the chat.
+    void (async () => {
+      const path = window.location.pathname;
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("desktop") === "1") return;
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        const { error } = await supabase.auth.signInAnonymously();
+        if (error) return;
+      }
+      if (path === "/" || path === "/auth") void router.navigate({ to: "/chat", replace: true });
+    })();
+    if (!api.onAuthTokens) return;
     const apply = async (t: AuthTokens) => {
       const { error } = await supabase.auth.setSession(t);
       if (!error) void router.navigate({ to: "/chat" });

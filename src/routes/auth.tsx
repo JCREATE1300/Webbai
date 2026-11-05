@@ -49,12 +49,9 @@ function AuthPage() {
 
   // Desktop app: open the system browser automatically.
   useEffect(() => {
+    // Guest sessions are created automatically; owners sign in via the browser button.
     if (!isElectron || openedBrowser) return;
     setOpenedBrowser(true);
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) return;
-      void getElectron()?.openExternalSignIn?.();
-    });
   }, [isElectron, openedBrowser]);
 
   const handoffToApp = async () => {
