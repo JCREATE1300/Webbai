@@ -287,6 +287,11 @@ function ChatThread() {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    if (getElectron()) {
+      await supabase.auth.signInAnonymously();
+      navigate({ to: "/chat" });
+      return;
+    }
     navigate({ to: "/auth" });
   };
 
