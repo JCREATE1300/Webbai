@@ -380,9 +380,20 @@ function ChatThread() {
           <Button variant="outline" size="sm" className="w-full justify-start" onClick={downloadWindows}>
             <Download className="w-4 h-4" /> Download for Windows
           </Button>
-          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={signOut}>
-            <LogOut className="w-4 h-4" /> Sign out
-          </Button>
+          {getElectron()?.openExternalSignIn && !myRole?.isOwner ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => void getElectron()?.openExternalSignIn?.()}
+            >
+              <LogOut className="w-4 h-4" /> Owner sign in
+            </Button>
+          ) : (
+            <Button variant="ghost" size="sm" className="w-full justify-start" onClick={signOut}>
+              <LogOut className="w-4 h-4" /> Sign out
+            </Button>
+          )}
         </div>
       </aside>
 
