@@ -111,8 +111,28 @@ async function searchModels(query) {
   return out.slice(0, 80);
 }
 
+// Data lives in %LOCALAPPDATA%\webbai so updates/reinstalls never touch it.
+function dataDir() {
+  const base = process.env.LOCALAPPDATA || app.getPath('userData');
+  const dir = process.env.LOCALAPPDATA ? path.join(base, 'webbai') : base;
+  try { fs.mkdirSync(dir, { recursive: true }); } catch { /* ignore */ }
+  return dir;
+}
+
+function modelsDir() {
+  const dir = path.join(dataDir(), 'models');
+  try { fs.mkdirSync(dir, { recursive: true }); } catch { /* ignore */ }
+  // Keep using an existing legacy model folder so earlier downloads aren't lost.
+  try {
+    const legacy = path.join(require('os').homedir(), '.ollama', 'models');
+    const isEmpty = fs.readdirSync(dir).length === 0;
+    if (isEmpty && fs.existsSync(path.join(legacy, 'manifests'))) return legacy;
+  } catch { /* ignore */ }
+  return dir;
+}
+
 function settingsFile() {
-  return path.join(app.getPath('userData'), 'webbai-local.json');
+  return path.join(dataDir(), 'webbai-local.json');
 }
 
 function readSettings() {
@@ -176,7 +196,7 @@ async function ensureServer() {
         detached: false,
         // Run next to the binary so the bundled runtime libs (lib/ollama) resolve.
         cwd: path.isAbsolute(bin) ? path.dirname(bin) : undefined,
-        env: { ...process.env, OLLAMA_HOST: '127.0.0.1:11434' },
+        env: { ...process.env, OLLAMA_HOST: '127.0.0.1:11434', OLLAMA_MODELS: modelsDir() },
       });
       serverProc.on('exit', () => {
         serverProc = null;

@@ -56,7 +56,9 @@ export type LocalBridge = {
 
 type ElectronBridge = {
   isElectron: boolean;
-  onUpdateAvailable: (callback: () => void) => void;
+  onUpdateAvailable: (callback: (info: { version?: string }) => void) => void;
+  onDownloadProgress?: (callback: (p: { percent?: number }) => void) => void;
+  downloadUpdate?: () => Promise<boolean>;
   onUpdateDownloaded: (callback: () => void) => void;
   onUpdateError: (callback: (message: string) => void) => void;
   checkForUpdates: () => Promise<unknown>;

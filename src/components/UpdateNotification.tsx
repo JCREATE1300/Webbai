@@ -1,124 +1,70 @@
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { AlertCircle, Download, RotateCcw } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getElectron } from '@/lib/electron';
+import { useEffect, useState } from "react";
+import { Download, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { getElectron } from "@/lib/electron";
+
+type State =
+  | { kind: "idle" }
+  | { kind: "available"; version?: string }
+  | { kind: "downloading"; version?: string; percent: number }
+  | { kind: "ready"; version?: string };
 
 export function UpdateNotification() {
-  const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [updateDownloaded, setUpdateDownloaded] = useState(false);
-  const [checking, setChecking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<State>({ kind: "idle" });
 
   useEffect(() => {
-    // Check if we're in Electron
-    if (!getElectron()) return;
-
-    // Listen for update events
-    getElectron()?.onUpdateAvailable(() => {
-      setUpdateAvailable(true);
-      setError(null);
-    });
-
-    getElectron()?.onUpdateDownloaded(() => {
-      setUpdateDownloaded(true);
-      setUpdateAvailable(false);
-      setError(null);
-    });
-
-    getElectron()?.onUpdateError((message: string) => {
-      setError(message);
-      setUpdateAvailable(false);
-    });
-
-    // Check for updates on component mount
-    handleCheckUpdates();
+    const api = getElectron();
+    if (!api) return;
+    api.onUpdateAvailable((info) => setState({ kind: "available", version: info?.version }));
+    api.onDownloadProgress?.((p) =>
+      setState((s) => ({ kind: "downloading", version: "version" in s ? s.version : undefined, percent: p?.percent ?? 0 })),
+    );
+    api.onUpdateDownloaded(() =>
+      setState((s) => ({ kind: "ready", version: "version" in s ? s.version : undefined })),
+    );
+    api.onUpdateError(() => setState((s) => (s.kind === "downloading" ? { kind: "available", version: s.version } : s)));
   }, []);
 
-  const handleCheckUpdates = async () => {
-    if (!getElectron()) return;
-    
-    setChecking(true);
-    try {
-      await getElectron()?.checkForUpdates();
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to check for updates');
-    } finally {
-      setChecking(false);
-    }
-  };
+  if (state.kind === "idle") return null;
+  const api = getElectron();
+  const v = state.version ? ` (v${state.version})` : "";
 
-  const handleRestartAndInstall = () => {
-    if (!getElectron()) return;
-    getElectron()?.restartAndInstall();
-  };
-
-  if (!getElectron()) return null;
-
-  if (updateDownloaded) {
-    return (
-      <Alert className="border-green-600 bg-green-50 dark:bg-green-950 mb-4">
-        <RotateCcw className="h-4 w-4 text-green-600" />
-        <AlertTitle>Update Ready to Install</AlertTitle>
-        <AlertDescription className="mt-2">
-          <div className="text-sm mb-3">
-            An update has been downloaded and is ready to install. Restart the app to apply it.
+  return (
+    <div className="fixed bottom-4 left-4 z-50 w-80 rounded-lg border border-border bg-card p-3 text-card-foreground shadow-lg">
+      {state.kind === "available" && (
+        <div className="flex items-center gap-3">
+          <Download className="h-4 w-4 shrink-0 text-primary" />
+          <span className="flex-1 text-sm">Update available{v}</span>
+          <Button
+            size="sm"
+            onClick={() => {
+              setState({ kind: "downloading", version: state.version, percent: 0 });
+              api?.downloadUpdate?.();
+            }}
+          >
+            Update Now
+          </Button>
+        </div>
+      )}
+      {state.kind === "downloading" && (
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Downloading update{v}</span>
+            <span className="text-muted-foreground">{state.percent}%</span>
           </div>
-          <Button 
-            onClick={handleRestartAndInstall}
-            size="sm"
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <RotateCcw className="h-3 w-3 mr-2" />
-            Restart & Install
+          <Progress value={state.percent} />
+        </div>
+      )}
+      {state.kind === "ready" && (
+        <div className="flex items-center gap-3">
+          <RotateCcw className="h-4 w-4 shrink-0 text-primary" />
+          <span className="flex-1 text-sm">Update ready{v}</span>
+          <Button size="sm" onClick={() => api?.restartAndInstall()}>
+            Restart to update
           </Button>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (updateAvailable) {
-    return (
-      <Alert className="border-blue-600 bg-blue-50 dark:bg-blue-950 mb-4">
-        <Download className="h-4 w-4 text-blue-600" />
-        <AlertTitle>Update Available</AlertTitle>
-        <AlertDescription className="mt-2">
-          <div className="text-sm mb-3">
-            A new version is available and will be downloaded in the background.
-          </div>
-          <Button 
-            onClick={handleCheckUpdates}
-            size="sm"
-            variant="outline"
-            disabled={checking}
-          >
-            {checking ? 'Downloading...' : 'Download Now'}
-          </Button>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert className="border-yellow-600 bg-yellow-50 dark:bg-yellow-950 mb-4">
-        <AlertCircle className="h-4 w-4 text-yellow-600" />
-        <AlertTitle>Update Check Failed</AlertTitle>
-        <AlertDescription className="mt-2">
-          <div className="text-sm mb-3">{error}</div>
-          <Button 
-            onClick={handleCheckUpdates}
-            size="sm"
-            variant="outline"
-            disabled={checking}
-          >
-            {checking ? 'Checking...' : 'Try Again'}
-          </Button>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  return null;
+        </div>
+      )}
+    </div>
+  );
 }
