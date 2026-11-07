@@ -1,4 +1,4 @@
 # Model download improvements
-- [ ] Track combined progress across all model files and handle download failures.
-- [ ] Show the model name and percentage to two decimal places.
-- [ ] Test download progress and inspect the updated screen.
+- [x] Track combined progress across all model files and handle download failures.
+- [x] Show the model name and percentage to two decimal places.
+- [x] Eight automated tests passed; desktop/mobile screen checked with a simulated desktop connection. Actual Windows download remains unverified.
