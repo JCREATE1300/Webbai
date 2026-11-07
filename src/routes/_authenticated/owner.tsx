@@ -22,6 +22,8 @@ export const Route = createFileRoute("/_authenticated/owner")({
       },
       { property: "og:url", content: "https://webbai.lovable.app/owner" },
       { name: "robots", content: "noindex" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [{ rel: "canonical", href: "https://webbai.lovable.app/owner" }],
   }),

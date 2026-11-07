@@ -80,6 +80,8 @@ export const Route = createFileRoute("/_authenticated/chat/$threadId")({
         content: `https://webbai.lovable.app/chat/${params.threadId}`,
       },
       { name: "robots", content: "noindex" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [
       { rel: "canonical", href: `https://webbai.lovable.app/chat/${params.threadId}` },

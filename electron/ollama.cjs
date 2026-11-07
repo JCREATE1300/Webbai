@@ -3,6 +3,7 @@ const { app } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const { createModelProgress, getModelLayers } = require('./model-progress.cjs');
 
 const HOST = 'http://127.0.0.1:11434';
 
@@ -252,8 +253,11 @@ function setModel(id) {
 
 // Pull a model, streaming progress back through `onProgress`.
 async function pullModel(id, onProgress) {
+  onProgress({ status: 'preparing', completed: 0, total: 0, percent: null });
   const ok = await ensureServer();
   if (!ok) throw new Error('Could not start the local AI runtime (Ollama).');
+
+  const report = createModelProgress(await getModelLayers(id));
 
   const res = await fetch(`${HOST}/api/pull`, {
     method: 'POST',
@@ -265,30 +269,35 @@ async function pullModel(id, onProgress) {
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buf = '';
+  let succeeded = false;
+  const consume = (line) => {
+    if (!line.trim()) return;
+    let json;
+    try { json = JSON.parse(line); } catch { return; }
+    // Runtime errors must not be swallowed as malformed JSON.
+    if (json.error) throw new Error(json.error);
+    if (json.status === 'success') {
+      succeeded = true;
+      return;
+    }
+    onProgress(report(json));
+  };
   while (true) {
     // eslint-disable-next-line no-await-in-loop
     const { done, value } = await reader.read();
-    if (done) break;
+    if (done) {
+      buf += decoder.decode();
+      consume(buf);
+      break;
+    }
     buf += decoder.decode(value, { stream: true });
     const lines = buf.split('\n');
     buf = lines.pop() || '';
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        const json = JSON.parse(line);
-        if (json.error) throw new Error(json.error);
-        onProgress({
-          status: json.status || '',
-          completed: json.completed || 0,
-          total: json.total || 0,
-        });
-      } catch {
-        /* ignore malformed chunk */
-      }
-    }
+    for (const line of lines) consume(line);
   }
+  if (!succeeded) throw new Error('Model download ended before it finished. Please try again.');
   setModel(id);
-  onProgress({ status: 'success', completed: 1, total: 1 });
+  onProgress(report({ status: 'success' }));
   return true;
 }
 
