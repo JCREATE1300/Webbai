@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/chat")({
+  head: () => ({ meta: [
+    { title: "Conversations — webbai" },
+    { name: "description", content: "Open your webbai conversations and continue chatting with your AI assistant." },
+    { property: "og:title", content: "Conversations — webbai" },
+    { property: "og:description", content: "Your saved conversations with the webbai assistant." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: ChatIndex,
 });
 

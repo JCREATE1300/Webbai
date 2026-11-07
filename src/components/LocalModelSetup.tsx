@@ -17,7 +17,7 @@ export function LocalModelSetup({ onReady, compact }: Props) {
   const bridge = getLocalBridge();
   const [status, setStatus] = useState<LocalStatus | null>(null);
   const [pulling, setPulling] = useState<string | null>(null);
-  const [progress, setProgress] = useState<{ label: string; pct: number } | null>(null);
+  const [progress, setProgress] = useState<{ phase: string; pct: number | null } | null>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<LocalSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -39,8 +39,12 @@ export function LocalModelSetup({ onReady, compact }: Props) {
         setProgress(null);
         return;
       }
-      const pct = p.total ? Math.round(((p.completed ?? 0) / p.total) * 100) : 0;
-      setProgress({ label: p.status || "downloading", pct });
+      // Older installed runtimes do not report whole-model totals: don't show
+      // a misleading percentage for only the currently downloading file.
+      const pct = p.percent == null ? null : Math.max(0, Math.min(100, p.percent));
+      const phase = /verifying|writing|removing/i.test(p.status) ? "Finishing" :
+        /preparing|manifest/i.test(p.status) ? "Preparing" : "Downloading";
+      setProgress({ phase, pct });
       if (p.status === "success") {
         setPulling(null);
         setProgress(null);
@@ -57,7 +61,9 @@ export function LocalModelSetup({ onReady, compact }: Props) {
     const t = setTimeout(async () => {
       setSearching(true);
       try {
-        setResults(await bridge.search!(query));
+        const search = bridge.search;
+        if (!search) return;
+        setResults(await search(query));
       } catch {
         setResults(null);
       } finally {
@@ -78,9 +84,16 @@ export function LocalModelSetup({ onReady, compact }: Props) {
 
   const install = async (id: string) => {
     setPulling(id);
-    setProgress({ label: "starting", pct: 0 });
-    await bridge.pull(id);
-    void refresh();
+    setProgress({ phase: "Preparing", pct: null });
+    try {
+      const result = await bridge.pull(id);
+      if (!result.ok) throw new Error(result.error || "Model download failed. Please try again.");
+      await refresh();
+    } catch (error) {
+      setPulling(null);
+      setProgress(null);
+      toast.error(error instanceof Error ? error.message : "Model download failed. Please try again.");
+    }
   };
 
   const select = async (id: string) => {
@@ -113,6 +126,8 @@ export function LocalModelSetup({ onReady, compact }: Props) {
   }
   const q = query.trim();
   if (q && /^[a-zA-Z0-9._:/-]+$/.test(q)) push({ id: q, title: q, detail: "Download this exact model name" });
+  const modelName = status?.catalog.find((model) => model.id === pulling)?.label ?? pulling;
+  const percentage = progress?.pct == null ? null : `${progress.pct.toFixed(2)}%`;
 
   return (
     <div className="space-y-4">
@@ -159,7 +174,7 @@ export function LocalModelSetup({ onReady, compact }: Props) {
               ) : (
                 <Button size="sm" onClick={() => install(m.id)} disabled={Boolean(pulling)}>
                   {pulling === m.id ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> {progress?.pct ?? 0}%</>
+                    <><Loader2 className="w-4 h-4 animate-spin" /> {percentage ?? "Preparing…"}</>
                   ) : (
                     <><Download className="w-4 h-4" /> Download</>
                   )}
@@ -175,10 +190,16 @@ export function LocalModelSetup({ onReady, compact }: Props) {
 
       {progress && (
         <div className="space-y-1">
-          <div className="h-2 rounded-full bg-muted overflow-hidden">
-            <div className="h-full bg-primary transition-all" style={{ width: `${progress.pct}%` }} />
+          <div className="flex items-start justify-between gap-3 text-xs" role="status">
+            <span className="min-w-0 break-words">{progress.phase} {modelName}</span>
+            <span className="shrink-0 tabular-nums">{percentage ?? "Calculating…"}</span>
           </div>
-          <p className="text-xs text-muted-foreground">{progress.label} — {progress.pct}%</p>
+          <div className="h-2 rounded-full bg-muted overflow-hidden" role="progressbar"
+            aria-label={`Download ${modelName}`} aria-valuemin={0} aria-valuemax={100}
+            aria-valuenow={progress.pct ?? undefined}>
+            <div className={`h-full bg-primary transition-all ${progress.pct == null ? "w-full motion-safe:animate-pulse" : ""}`}
+              style={progress.pct == null ? undefined : { width: `${progress.pct}%` }} />
+          </div>
         </div>
       )}
 

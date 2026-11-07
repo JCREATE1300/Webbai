@@ -27,6 +27,8 @@ export type LocalPullProgress = {
   status: string;
   completed?: number;
   total?: number;
+  /** Combined percentage across every model layer; null while total size is unknown. */
+  percent?: number | null;
   error?: string;
 };
 

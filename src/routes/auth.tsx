@@ -25,6 +25,8 @@ export const Route = createFileRoute("/auth")({
           "Access your webbai threads, open any website inside the app and grab the Windows desktop build.",
       },
       { property: "og:url", content: "https://webbai.lovable.app/auth" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [{ rel: "canonical", href: "https://webbai.lovable.app/auth" }],
   }),
