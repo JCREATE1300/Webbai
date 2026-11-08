@@ -5,6 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const { createModelProgress, getModelLayers } = require('./model-progress.cjs');
 
+const { fetchLibrary, fetchVersions } = require('./model-library.cjs');
+
 const HOST = 'http://127.0.0.1:11434';
 
 const MODELS = [
@@ -44,72 +46,13 @@ function normalizeModelName(name) {
     .replace(/:latest$/i, '');
 }
 
-function pushModelResult(out, name, description = '', sizes = [], capabilities = []) {
-  const normalized = normalizeModelName(name);
-  if (!normalized || out.some((item) => normalizeModelName(item.name) === normalized)) return;
-  out.push({
-    name: normalized,
-    description: description || 'Ollama model',
-    sizes: [...new Set((sizes || []).map((s) => String(s).trim()).filter(Boolean))],
-    capabilities: [...new Set((capabilities || []).map((s) => String(s).trim()).filter(Boolean))],
-  });
+// Browse the live public library without an artificial result limit.
+async function searchModels(query) {
+  return fetchLibrary(query);
 }
 
-// Search the installed models and the broader Ollama catalog. The public Ollama
-// library pages can be inconsistent, so we fall back to the curated catalog and
-// exact-name entries instead of assuming a Gemma-only result set.
-async function searchModels(query) {
-  const q = String(query || '').trim();
-  const out = [];
-
-  try {
-    const installed = await installedModels();
-    for (const name of installed) pushModelResult(out, name, 'Installed locally', [], ['local']);
-  } catch {
-    // ignore if the local runtime is not running yet
-  }
-
-  const matches = MODELS.filter((x) => {
-    if (!q) return true;
-    const needle = q.toLowerCase();
-    return x.id.toLowerCase().includes(needle) || x.label.toLowerCase().includes(needle) || x.note.toLowerCase().includes(needle);
-  });
-  for (const x of matches) pushModelResult(out, x.id, x.note, [], []);
-
-  if (q) {
-    try {
-      const url = `https://ollama.com/search?q=${encodeURIComponent(q)}`;
-      const res = await fetch(url, { headers: { 'User-Agent': 'webbai' } });
-      if (res.ok) {
-        const html = await res.text();
-        const names = new Set();
-        for (const match of html.matchAll(/(?:href|data-name|data-model-name|modelName)[^\n\r"'<>:=]*["']?\s*[:=]\s*["']([^"'<>\s]+)["']/gi)) {
-          const value = match[1];
-          if (!value || /^(?:https?:|\/|#)/.test(value)) continue;
-          names.add(value);
-        }
-        for (const match of html.matchAll(/\/library\/([a-zA-Z0-9._:-]+)/g)) {
-          names.add(match[1]);
-        }
-        for (const name of [...names]) {
-          if (!/^[a-zA-Z0-9._:-]+$/.test(name)) continue;
-          pushModelResult(out, name, 'Available in the Ollama library', [], []);
-        }
-      }
-    } catch {
-      // ignore library scrape errors and continue to the fallback catalog below
-    }
-  }
-
-  if (q && /^[a-zA-Z0-9._:-]+$/.test(q)) {
-    pushModelResult(out, q, 'Download this exact model name', [], []);
-  }
-
-  if (!q && out.length === 0) {
-    for (const x of MODELS) pushModelResult(out, x.id, x.note, [], []);
-  }
-
-  return out.slice(0, 80);
+async function modelVersions(name) {
+  return fetchVersions(name);
 }
 
 // Data lives in %LOCALAPPDATA%\webbai so updates/reinstalls never touch it.
@@ -246,7 +189,11 @@ async function status() {
   };
 }
 
-function setModel(id) {
+async function setModel(id) {
+  const models = await installedModels();
+  if (!models.some((name) => normalizeModelName(name) === normalizeModelName(id))) {
+    throw new Error('Download this model completely before selecting it.');
+  }
   writeSettings({ model: id });
   return readSettings().model;
 }
@@ -296,7 +243,7 @@ async function pullModel(id, onProgress) {
     for (const line of lines) consume(line);
   }
   if (!succeeded) throw new Error('Model download ended before it finished. Please try again.');
-  setModel(id);
+  await setModel(id);
   onProgress(report({ status: 'success' }));
   return true;
 }
@@ -379,4 +326,4 @@ function stopServer() {
   }
 }
 
-module.exports = { MODELS, searchModels, ensureServer, status, pullModel, chat, setModel, stopServer, readSettings };
+module.exports = { MODELS, searchModels, modelVersions, ensureServer, status, pullModel, chat, setModel, stopServer, readSettings };

@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('electron', {
     status: () => ipcRenderer.invoke('local:status'),
     catalog: () => ipcRenderer.invoke('local:catalog'),
     search: (q) => ipcRenderer.invoke('local:search', q),
+    versions: (name) => ipcRenderer.invoke('local:versions', name),
     setModel: (id) => ipcRenderer.invoke('local:set-model', id),
     pull: (id) => ipcRenderer.invoke('local:pull', id),
     onPullProgress: (cb) => {

@@ -11,6 +11,8 @@ export type LocalSearchResult = {
   description: string;
   sizes: string[];
   capabilities: string[];
+  size?: string;
+  cloudOnly?: boolean;
 };
 
 export type LocalStatus = {
@@ -45,6 +47,7 @@ export type LocalBridge = {
   status: () => Promise<LocalStatus>;
   catalog: () => Promise<LocalModelInfo[]>;
   search?: (q: string) => Promise<LocalSearchResult[]>;
+  versions?: (name: string) => Promise<LocalSearchResult[]>;
   setModel: (id: string) => Promise<string>;
   pull: (id: string) => Promise<{ ok: boolean; error?: string }>;
   onPullProgress: (cb: (p: LocalPullProgress) => void) => () => void;
