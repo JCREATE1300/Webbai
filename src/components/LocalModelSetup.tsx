@@ -11,7 +11,7 @@ type Props = {
   compact?: boolean;
 };
 
-type Row = { id: string; title: string; detail: string };
+type Row = { id: string; title: string; detail: string; family?: boolean; cloudOnly?: boolean };
 
 export function LocalModelSetup({ onReady, compact }: Props) {
   const bridge = getLocalBridge();
@@ -21,6 +21,10 @@ export function LocalModelSetup({ onReady, compact }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<LocalSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
+  const [versions, setVersions] = useState<Record<string, LocalSearchResult[]>>({});
+  const [loadingVersion, setLoadingVersion] = useState<string | null>(null);
 
   const refresh = async () => {
     if (!bridge) return;
@@ -55,24 +59,25 @@ export function LocalModelSetup({ onReady, compact }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Search the full model library (debounced).
+  // Ignore replies from searches that have already been replaced.
   useEffect(() => {
     if (!bridge?.search) return;
+    let active = true;
+    setSearching(true);
+    setResults(null);
+    setSearchError(null);
     const t = setTimeout(async () => {
-      setSearching(true);
       try {
-        const search = bridge.search;
-        if (!search) return;
-        setResults(await search(query));
-      } catch {
-        setResults(null);
+        const found = await bridge.search?.(query);
+        if (active) setResults(found ?? []);
+      } catch (error) {
+        if (active) setSearchError(error instanceof Error ? error.message : "Could not load the Ollama library.");
       } finally {
-        setSearching(false);
+        if (active) setSearching(false);
       }
     }, 350);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+    return () => { active = false; clearTimeout(t); };
+  }, [query, retry]);
 
   if (!bridge) {
     return compact ? null : (
@@ -97,8 +102,12 @@ export function LocalModelSetup({ onReady, compact }: Props) {
   };
 
   const select = async (id: string) => {
-    await bridge.setModel(id);
-    void refresh();
+    try {
+      await bridge.setModel(id);
+      await refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not select this model.");
+    }
   };
 
   const installed = (id: string) =>
@@ -112,20 +121,31 @@ export function LocalModelSetup({ onReady, compact }: Props) {
     seen.add(r.id);
     rows.push(r);
   };
-  for (const m of status?.models ?? []) push({ id: m.replace(/:latest$/, ""), title: m, detail: "Downloaded" });
-  const list =
-    results ??
-    (status?.catalog ?? []).map((m) => ({ name: m.id, description: m.note, sizes: [], capabilities: [] }));
-  for (const r of list) {
+  for (const m of status?.models ?? []) {
+    if (!query || m.toLowerCase().includes(query.toLowerCase())) push({ id: m.replace(/:latest$/, ""), title: m, detail: "Downloaded" });
+  }
+  for (const r of results ?? []) {
     const extra = r.capabilities.length ? ` · ${r.capabilities.join(", ")}` : "";
-    if (r.sizes.length) {
-      for (const sz of r.sizes) push({ id: `${r.name}:${sz}`, title: `${r.name}:${sz}`, detail: r.description + extra });
-    } else {
-      push({ id: r.name, title: r.name, detail: r.description + extra });
+    push({ id: r.name, title: r.name, detail: r.description + extra, family: !r.name.includes(":") });
+    for (const version of versions[r.name] ?? []) {
+      push({ id: version.name, title: version.name, detail: version.size ?? version.description, cloudOnly: version.cloudOnly });
     }
   }
   const q = query.trim();
   if (q && /^[a-zA-Z0-9._:/-]+$/.test(q)) push({ id: q, title: q, detail: "Download this exact model name" });
+  const showVersions = async (id: string) => {
+    if (!bridge.versions) {
+      toast.error("Update the Windows app to browse model versions.");
+      return;
+    }
+    if (versions[id]) { setVersions((old) => { const next = { ...old }; delete next[id]; return next; }); return; }
+    setLoadingVersion(id);
+    try {
+      const found = await bridge.versions(id);
+      setVersions((old) => ({ ...old, [id]: found }));
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Could not load model versions."); }
+    finally { setLoadingVersion(null); }
+  };
   const modelName = status?.catalog.find((model) => model.id === pulling)?.label ?? pulling;
   const percentage = progress?.pct == null ? null : `${progress.pct.toFixed(2)}%`;
 
@@ -136,7 +156,7 @@ export function LocalModelSetup({ onReady, compact }: Props) {
         <div>
           <h2 className="font-semibold">Choose an AI model</h2>
           <p className="text-sm text-muted-foreground">
-            Search every available model and download one. Models tagged "vision" can see your screen.
+            Ollama library
           </p>
         </div>
       </div>
@@ -153,6 +173,7 @@ export function LocalModelSetup({ onReady, compact }: Props) {
         {searching && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-1/2 -translate-y-1/2" />}
       </div>
 
+      {searchError && <div role="alert" className="flex items-center gap-3 text-sm text-destructive"><span>{searchError}</span><Button variant="outline" size="sm" onClick={() => setRetry((value) => value + 1)}>Retry</Button></div>}
       <div className="grid gap-2 max-h-[45vh] overflow-y-auto pr-1">
         {rows.map((m) => {
           const isInstalled = installed(m.id);
@@ -160,15 +181,20 @@ export function LocalModelSetup({ onReady, compact }: Props) {
           return (
             <div
               key={m.id}
-              className={`flex items-center gap-3 rounded-lg border p-3 ${isSelected ? "border-primary bg-accent/40" : ""}`}
+              className={`flex flex-wrap items-center gap-3 rounded-lg border p-3 ${isSelected ? "border-primary bg-accent/40" : ""}`}
             >
               <HardDrive className="w-4 h-4 shrink-0 opacity-60" />
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 basis-36">
                 <div className="text-sm font-medium truncate">{m.title}</div>
                 <div className="text-xs text-muted-foreground line-clamp-2">{m.detail}</div>
               </div>
-              {isInstalled ? (
-                <Button size="sm" variant={isSelected ? "secondary" : "outline"} onClick={() => select(m.id)} disabled={isSelected}>
+              {m.family && (
+                <Button size="sm" variant="outline" disabled={loadingVersion === m.id} onClick={() => void showVersions(m.id)}>
+                  {loadingVersion === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : versions[m.id] ? "Hide versions" : "Versions"}
+                </Button>
+              )}
+              {m.cloudOnly ? <span className="text-xs text-muted-foreground">Cloud only</span> : isInstalled ? (
+                <Button size="sm" variant={isSelected ? "secondary" : "outline"} onClick={() => select(m.id)} disabled={isSelected || Boolean(pulling)}>
                   {isSelected ? <><Check className="w-4 h-4" /> In use</> : "Use this"}
                 </Button>
               ) : (

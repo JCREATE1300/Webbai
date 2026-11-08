@@ -11,3 +11,4 @@
 
 - Keep whole-model byte tracking in `electron/model-progress.cjs` and include it in desktop packaging; manifest layer sizes provide a reliable denominator before sequential downloads start.
 - Treat Ollama pull errors or streams without a success event as failed downloads; only select a model after verified completion.
+- Keep public Ollama library and exact tag parsing in `electron/model-library.cjs`, included in desktop packaging; list live families without a curated cap and fetch versions on demand.
