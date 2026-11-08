@@ -6,4 +6,6 @@
 - [x] Check download failures and model selection; ignore stale searches and show library errors instead of a curated fallback.
 - [x] Remove the welcome screen and open chat, preserving required sign-in; signed-out desktop/mobile opening verified.
 - [ ] Verify a real model download in the Windows app (blocked: no Windows runtime in this sandbox).
-- [ ] Verify signed-in opening and the model picker through the chat UI (blocked: no matching requesting-user account/session available).
+- [ ] Remove all sign-in UI and owner panel; keep existing private account data protected and store new conversations on this device.
+- [ ] Verify Windows update detection and show Latest version / Update now on the download button.
+- [ ] Verify account-free chat and local model picker end-to-end.
