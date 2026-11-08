@@ -1,19 +1,10 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import ReactMarkdown from "react-markdown";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  createThread,
-  deleteThread,
-  getThreadMessages,
-  listThreads,
-} from "@/lib/threads.functions";
-import { getMyRole } from "@/lib/owner.functions";
-import { getWindowsDownloadUrl } from "@/lib/downloads.functions";
+import { readThreads, createDeviceThread, deleteDeviceThread, persistMessages } from "@/lib/device-threads";
+import { WindowsDownloadButton } from "@/components/WindowsDownloadButton";
 import { getLocalBridge, getElectron, captureScreen } from "@/lib/electron";
 import { createLocalChatFetch } from "@/lib/local-chat";
 import { LocalModelSetup } from "@/components/LocalModelSetup";
@@ -43,11 +34,9 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import {
   Plus,
   Trash2,
-  LogOut,
   Globe,
   Download,
   MessageSquare,
-  Shield,
   X,
   Maximize2,
   Minimize2,
@@ -61,7 +50,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/chat/$threadId")({
+export const Route = createFileRoute("/chat/$threadId")({
   head: ({ params }) => ({
     meta: [
       { title: "Chat — webbai" },
@@ -87,48 +76,22 @@ export const Route = createFileRoute("/_authenticated/chat/$threadId")({
       { rel: "canonical", href: `https://webbai.lovable.app/chat/${params.threadId}` },
     ],
   }),
-  component: ChatThread,
+  ssr: false,
+  component: () => { const { threadId } = Route.useParams(); return <ChatThread key={threadId} />; },
 });
 
 function ChatThread() {
   const { threadId } = Route.useParams();
   const navigate = useNavigate();
-  const qc = useQueryClient();
-  const listFn = useServerFn(listThreads);
-  const createFn = useServerFn(createThread);
-  const deleteFn = useServerFn(deleteThread);
-  const getMsgsFn = useServerFn(getThreadMessages);
-
-  const [token, setToken] = useState<string | null>(null);
-
+  const [threads, setThreads] = useState(readThreads);
+  const [initialMessages] = useState(() => createDeviceThread(threadId).messages);
+  const msgsLoading = false;
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setToken(data.session?.access_token ?? null);
-    });
+    const sync = () => setThreads(readThreads());
+    window.addEventListener("webbai-threads", sync);
+    window.addEventListener("storage", sync);
+    return () => { window.removeEventListener("webbai-threads", sync); window.removeEventListener("storage", sync); };
   }, []);
-
-  const { data: threads = [] } = useQuery({
-    queryKey: ["threads"],
-    queryFn: () => listFn(),
-  });
-
-  const roleFn = useServerFn(getMyRole);
-  const { data: myRole } = useQuery({
-    queryKey: ["my-role"],
-    queryFn: () => roleFn(),
-  });
-
-  const { data: initialMessages, isLoading: msgsLoading } = useQuery({
-    queryKey: ["messages", threadId],
-    queryFn: async () => {
-      const rows = await getMsgsFn({ data: { threadId } });
-      return rows.map((r) => ({
-        id: r.id,
-        role: r.role as "user" | "assistant" | "system",
-        parts: r.parts as UIMessage["parts"],
-      })) as UIMessage[];
-    },
-  });
 
   // Local Gemma 4 (desktop app) — preferred whenever it's installed & ready.
   const localBridge = getLocalBridge();
@@ -161,11 +124,7 @@ function ChatThread() {
     };
   }, [localBridge]);
 
-  // Online (cloud) AI is owner-only; everyone else needs the desktop app's
-  // local model.
-  // Desktop users without a model can still type — sending asks them to download one.
-  const onlineLocked = !localBridge && !localReady && myRole !== undefined && !myRole.isOwner;
-  const needsModel = Boolean(localBridge) && !localReady && myRole !== undefined && !myRole.isOwner;
+  const needsModel = Boolean(localBridge) && !localReady;
 
   const transport = useMemo(
     () =>
@@ -176,11 +135,10 @@ function ChatThread() {
             body: { threadId },
           })
         : new DefaultChatTransport({
-            api: "/api/chat",
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            api: "/api/public/chat",
             body: { threadId },
           }),
-    [token, threadId, localReady],
+    [threadId, localReady],
   );
 
   const { messages, sendMessage, status } = useChat({
@@ -188,11 +146,13 @@ function ChatThread() {
     messages: initialMessages ?? [],
     transport,
     onError: (err) => toast.error(err.message),
-    onFinish: () => {
-      qc.invalidateQueries({ queryKey: ["threads"] });
-    },
+    onFinish: ({ messages: completed }) => persistMessages(threadId, completed),
   });
 
+
+  useEffect(() => {
+    if (status === "ready" && messages.length) persistMessages(threadId, messages);
+  }, [messages, status, threadId]);
 
   // Embedded in-app browser panel
   const [openedUrl, setOpenedUrl] = useState<string | null>(null);
@@ -269,14 +229,12 @@ function ChatThread() {
 
 
   const newChat = async () => {
-    const t = await createFn();
-    qc.invalidateQueries({ queryKey: ["threads"] });
+    const t = createDeviceThread();
     navigate({ to: "/chat/$threadId", params: { threadId: t.id } });
   };
 
   const removeThread = async (id: string) => {
-    await deleteFn({ data: { id } });
-    qc.invalidateQueries({ queryKey: ["threads"] });
+    deleteDeviceThread(id);
     if (id === threadId) {
       const remaining = threads.filter((t) => t.id !== id);
       if (remaining.length > 0) {
@@ -287,32 +245,6 @@ function ChatThread() {
     }
   };
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    if (getElectron()) {
-      await supabase.auth.signInAnonymously();
-      navigate({ to: "/chat" });
-      return;
-    }
-    navigate({ to: "/auth" });
-  };
-
-  const downloadFn = useServerFn(getWindowsDownloadUrl);
-  const downloadWindows = async () => {
-    try {
-      const { url, filename } = await downloadFn();
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.rel = "noopener";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Download failed");
-    }
-  };
-
   const isLoading = status === "submitted" || status === "streaming";
 
   return (
@@ -320,7 +252,7 @@ function ChatThread() {
       {/* Sidebar */}
       <aside
         aria-labelledby="threads-heading"
-        className="w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground flex flex-col"
+        className="w-44 sm:w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground flex flex-col"
       >
         <h2 id="threads-heading" className="sr-only">Your chat threads</h2>
         <div className="p-4 flex items-center gap-2 border-b border-sidebar-border">
@@ -359,13 +291,6 @@ function ChatThread() {
           ))}
         </div>
         <div className="p-3 border-t border-sidebar-border space-y-2">
-          {myRole?.isOwner && (
-            <Link to="/owner" className="block">
-              <Button variant="outline" size="sm" className="w-full justify-start">
-                <Shield className="w-4 h-4" /> Owner Panel
-              </Button>
-            </Link>
-          )}
           {localBridge && (
             <Button
               variant="outline"
@@ -379,23 +304,7 @@ function ChatThread() {
               </span>
             </Button>
           )}
-          <Button variant="outline" size="sm" className="w-full justify-start" onClick={downloadWindows}>
-            <Download className="w-4 h-4" /> Download for Windows
-          </Button>
-          {getElectron()?.openExternalSignIn && !myRole?.isOwner ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
-              onClick={() => void getElectron()?.openExternalSignIn?.()}
-            >
-              <LogOut className="w-4 h-4" /> Owner sign in
-            </Button>
-          ) : (
-            <Button variant="ghost" size="sm" className="w-full justify-start" onClick={signOut}>
-              <LogOut className="w-4 h-4" /> Sign out
-            </Button>
-          )}
+          <WindowsDownloadButton />
         </div>
       </aside>
 
@@ -500,30 +409,16 @@ function ChatThread() {
 
         <div className="p-4 border-t bg-background">
           <div className="max-w-3xl mx-auto">
-            {onlineLocked && (
-              <div className="mb-3 rounded-lg border bg-muted/50 px-4 py-3 text-sm text-muted-foreground flex items-center gap-3">
-                <Download className="w-4 h-4 shrink-0" />
-                <span>
-                  The online assistant is reserved for the owner. Download the webbai
-                  desktop app to chat with the AI model that runs on your own computer.
-                </span>
-              </div>
-            )}
             <PromptInput onSubmit={submit as any} multiple>
               <AttachmentChips />
               <PromptInputTextarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                disabled={onlineLocked}
-                placeholder={
-                  onlineLocked
-                    ? "Download the desktop app to chat"
-                    : "Ask anything, or say 'open example.com'…"
-                }
+                placeholder="Ask anything, or say 'open example.com'…"
               />
               <PromptInputFooter className="justify-between">
                 <div className="flex items-center gap-1">
-                  <AttachButton disabled={onlineLocked} />
+                  <AttachButton />
                   {canSeeScreen && (
                     <Button
                       type="button"
@@ -539,7 +434,7 @@ function ChatThread() {
                     </Button>
                   )}
                 </div>
-                <PromptInputSubmit status={status} disabled={isLoading || onlineLocked} />
+                <PromptInputSubmit status={status} disabled={isLoading} />
               </PromptInputFooter>
             </PromptInput>
           </div>
