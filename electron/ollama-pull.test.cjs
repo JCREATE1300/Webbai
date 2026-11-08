@@ -9,7 +9,7 @@ function runtime(chunks) {
   const module = { exports: {} };
   vm.runInNewContext(fs.readFileSync(require.resolve('./ollama.cjs'), 'utf8'), {
     module, __dirname: '/tmp', process: { env: {}, platform: 'linux' },
-    TextDecoder, Set, fetch: async (url) => url.endsWith('/api/tags') ? { ok: true } : {
+    TextDecoder, Set, fetch: async (url) => url.endsWith('/api/tags') ? { ok: true, json: async () => ({ models: [{ name: 'llama3.2:latest' }] }) } : {
       ok: true, body: new ReadableStream({ start(controller) {
         for (const chunk of chunks) controller.enqueue(new TextEncoder().encode(chunk));
         controller.close();
@@ -52,5 +52,10 @@ test('in-stream errors reject the download without selecting a model', async () 
 test('interrupted stream cannot silently succeed', async () => {
   const api = runtime(['{"digest":"a","total":1000,"completed":100}\n']);
   await assert.rejects(api.pullModel('llama3.2', () => {}), /ended before it finished/);
+  assert.equal(api.readSettings().model, undefined);
+});
+ test('cannot select a model that was never downloaded', async () => {
+  const api = runtime([]);
+  await assert.rejects(api.setModel('missing'), /before selecting/);
   assert.equal(api.readSettings().model, undefined);
 });
