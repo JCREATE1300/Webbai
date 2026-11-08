@@ -1,11 +1,10 @@
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { createThread, listThreads } from "@/lib/threads.functions";
+import { readThreads, createDeviceThread } from "@/lib/device-threads";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/chat")({
+export const Route = createFileRoute("/chat")({
   head: () => ({ meta: [
     { title: "Conversations — webbai" },
     { name: "description", content: "Open your webbai conversations and continue chatting with your AI assistant." },
@@ -14,14 +13,13 @@ export const Route = createFileRoute("/_authenticated/chat")({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ] }),
+  ssr: false,
   component: ChatIndex,
 });
 
 function ChatIndex() {
   const location = useLocation();
   const navigate = useNavigate();
-  const list = useServerFn(listThreads);
-  const create = useServerFn(createThread);
   const ranRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const isChatIndex = location.pathname.replace(/\/$/, "") === "/chat";
@@ -32,7 +30,7 @@ function ChatIndex() {
     ranRef.current = true;
     (async () => {
       try {
-        const threads = await list();
+        const threads = readThreads();
         if (threads.length > 0) {
           navigate({
             to: "/chat/$threadId",
@@ -41,7 +39,7 @@ function ChatIndex() {
           });
           return;
         }
-        const t = await create();
+        const t = createDeviceThread();
         navigate({
           to: "/chat/$threadId",
           params: { threadId: t.id },
@@ -53,7 +51,7 @@ function ChatIndex() {
         toast.error(msg);
       }
     })();
-  }, [isChatIndex, list, create, navigate]);
+  }, [isChatIndex, navigate]);
 
   if (!isChatIndex) {
     return <Outlet />;
