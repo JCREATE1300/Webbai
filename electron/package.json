@@ -1,7 +1,7 @@
 {
   "name": "webbai",
   "productName": "webbai",
-  "version": "1.0.0-alpha",
+  "version": "1.0.1",
   "description": "webbai desktop \u2014 chat + in-window AI page assistant",
   "main": "main.cjs",
   "author": "webbai",
@@ -28,6 +28,7 @@
     },
     "files": [
       "main.cjs",
+      "updater.cjs",
       "preload.cjs",
       "ollama.cjs",
       "model-progress.cjs",

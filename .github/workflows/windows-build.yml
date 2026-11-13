@@ -23,6 +23,16 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Validate release version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $version = (Get-Content electron/package.json | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_NAME -ne "v$version") { throw "Release tag must match desktop version v$version" }
+
+      - name: Test desktop downloads and updater
+        run: node --test electron/*.test.cjs
+
       # Build the web app (Vite output goes to dist/)
       - name: Install web deps
         run: bun install --frozen-lockfile
@@ -61,12 +71,18 @@ jobs:
         working-directory: electron/release
         run: |
           if (-not (Test-Path webbai-windows.exe)) { throw "Installer was not produced" }
+          foreach ($file in @("webbai-windows.exe.blockmap", "latest.yml")) {
+            if (-not (Test-Path $file)) { throw "Updater file missing: $file" }
+          }
+          $metadata = Get-Content latest.yml -Raw
+          if ($metadata -notmatch 'webbai-windows\.exe') { throw "Update metadata references the wrong installer" }
           Get-ChildItem
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: webbai-windows
+          if-no-files-found: error
           path: |
             electron/release/webbai-windows.exe
             electron/release/webbai-windows.exe.blockmap
@@ -76,6 +92,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          fail_on_unmatched_files: true
           files: |
             electron/release/webbai-windows.exe
             electron/release/webbai-windows.exe.blockmap

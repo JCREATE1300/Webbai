@@ -4,8 +4,10 @@
 - [x] Thirteen automated tests passed, including combined progress, download errors, interrupted streams, selection, uncapped library parsing, and exact versions.
 - [x] Browse the live Ollama library without a curated-list limit, including model versions and exact names; live checks returned 270 families and 63 llama3.2 tags.
 - [x] Check download failures and model selection; ignore stale searches and show library errors instead of a curated fallback.
-- [x] Remove the welcome screen and open chat, preserving required sign-in; signed-out desktop/mobile opening verified.
+- [x] Remove the welcome screen and open chat directly.
 - [ ] Verify a real model download in the Windows app (blocked: no Windows runtime in this sandbox).
-- [ ] Remove all sign-in UI and owner panel; keep existing private account data protected and store new conversations on this device.
-- [ ] Verify Windows update detection and show Latest version / Update now on the download button.
-- [ ] Verify account-free chat and local model picker end-to-end.
+- [x] Remove all sign-in UI and owner panel; keep existing private account data protected and store new conversations on this device.
+- [x] Add shared update detection, Latest version / Update now download controls, and stricter release validation; 17 desktop tests and 4 device/download tests passed.
+- [x] Verify account-free opening, question submission, device persistence, and compact layout in the preview.
+- [ ] Verify online AI replies (blocked: configured OpenRouter free 20b model returns unavailable).
+- [ ] Verify real Windows updates (blocked: current public release contains only ZIP, not EXE, blockmap, and latest.yml; Windows runtime unavailable here).

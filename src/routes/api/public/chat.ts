@@ -69,7 +69,12 @@ If the user's message includes a screenshot, it is a live capture of the screen 
 
         const response = result.toUIMessageStreamResponse({
           originalMessages: messages,
-
+          onError: (error) => {
+            if (error && typeof error === "object" && "statusCode" in error && error.statusCode === 404) {
+              return "The selected online AI model is no longer available. Local AI models still work in the Windows app.";
+            }
+            return "The AI service couldn't answer. Please try again later.";
+          },
         });
 
         return response;

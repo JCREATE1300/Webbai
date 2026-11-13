@@ -10,7 +10,8 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { UpdateNotification } from "@/components/UpdateNotification";
+import { DesktopUpdateProvider, UpdateNotification } from "@/components/UpdateNotification";
+import { Toaster } from "@/components/ui/sonner";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
@@ -120,9 +121,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <DesktopUpdateProvider>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <UpdateNotification />
+      <Toaster />
+      </DesktopUpdateProvider>
     </QueryClientProvider>
   );
 }

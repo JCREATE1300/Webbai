@@ -61,21 +61,16 @@ export type LocalBridge = {
 
 type ElectronBridge = {
   isElectron: boolean;
-  onUpdateAvailable: (callback: (info: { version?: string }) => void) => void;
-  onDownloadProgress?: (callback: (p: { percent?: number }) => void) => void;
+  onUpdateAvailable: (callback: (info: { version?: string }) => void) => () => void;
+  onDownloadProgress?: (callback: (p: { percent?: number }) => void) => () => void;
   downloadUpdate?: () => Promise<boolean>;
-  onUpdateDownloaded: (callback: () => void) => void;
-  onUpdateError: (callback: (message: string) => void) => void;
-  checkForUpdates: () => Promise<unknown>;
+  onUpdateDownloaded: (callback: () => void) => () => void;
+  onUpdateError: (callback: (message: string) => void) => () => void;
+  checkForUpdates: () => Promise<{ status: "available" | "current" | "error"; version?: string; error?: string } | null>;
   restartAndInstall: () => Promise<unknown>;
   captureScreen?: () => Promise<string | null>;
-  openExternalSignIn?: () => Promise<boolean>;
-  getPendingAuth?: () => Promise<AuthTokens | null>;
-  onAuthTokens?: (cb: (t: AuthTokens) => void) => () => void;
   local?: LocalBridge;
 };
-
-export type AuthTokens = { access_token: string; refresh_token: string };
 
 export function getElectron(): ElectronBridge | undefined {
   if (typeof window === "undefined") return undefined;

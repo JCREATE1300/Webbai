@@ -12,7 +12,7 @@ function write(threads: DeviceThread[]) {
   localStorage.setItem(KEY, JSON.stringify(threads));
   window.dispatchEvent(new Event("webbai-threads"));
 }
-export function createDeviceThread(id = crypto.randomUUID()): DeviceThread {
+export function createDeviceThread(id: string = crypto.randomUUID()): DeviceThread {
   const existing = readThreads().find((thread) => thread.id === id);
   if (existing) return existing;
   const thread = { id, title: "New chat", updated_at: new Date().toISOString(), messages: [] };

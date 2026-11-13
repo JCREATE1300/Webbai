@@ -3,11 +3,11 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('__webbai', {
-  getToken: () => ipcRenderer.invoke('webbai:get-token'),
-  getApiBase: () => ipcRenderer.invoke('webbai:api-base'),
-  screenshot: () => ipcRenderer.invoke('webbai:screenshot'),
-});
+function subscribe(channel, callback) {
+  const handler = (_event, payload) => callback(payload);
+  ipcRenderer.on(channel, handler);
+  return () => ipcRenderer.removeListener(channel, handler);
+}
 
 // Expose electron flag to indicate running in Electron
 contextBridge.exposeInMainWorld('electron', {
@@ -16,21 +16,12 @@ contextBridge.exposeInMainWorld('electron', {
   // Screenshot of the window the user is currently looking at
   captureScreen: () => ipcRenderer.invoke('webbai:screenshot'),
 
-  // Browser-based sign-in handoff
-  openExternalSignIn: () => ipcRenderer.invoke('webbai:open-external-signin'),
-  getPendingAuth: () => ipcRenderer.invoke('webbai:pending-auth'),
-  onAuthTokens: (cb) => {
-    const handler = (_e, payload) => cb(payload);
-    ipcRenderer.on('webbai:auth-tokens', handler);
-    return () => ipcRenderer.removeListener('webbai:auth-tokens', handler);
-  },
-
   // Update APIs
-  onUpdateAvailable: (callback) => ipcRenderer.on('update-available', (_, info) => callback(info || {})),
-  onDownloadProgress: (callback) => ipcRenderer.on('update-progress', (_, p) => callback(p || {})),
+  onUpdateAvailable: (callback) => subscribe('update-available', (info) => callback(info || {})),
+  onDownloadProgress: (callback) => subscribe('update-progress', (p) => callback(p || {})),
   downloadUpdate: () => ipcRenderer.invoke('update:download'),
-  onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', callback),
-  onUpdateError: (callback) => ipcRenderer.on('update-error', (_, message) => callback(message)),
+  onUpdateDownloaded: (callback) => subscribe('update-downloaded', callback),
+  onUpdateError: (callback) => subscribe('update-error', callback),
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
   restartAndInstall: () => ipcRenderer.invoke('update:restart'),
 
