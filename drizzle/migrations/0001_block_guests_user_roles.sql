@@ -1,0 +1,1 @@
+CREATE POLICY "no guest sessions on user_roles" ON public.user_roles AS RESTRICTIVE FOR ALL TO authenticated USING (((auth.jwt() ->> 'is_anonymous')::boolean) IS NOT TRUE) WITH CHECK (((auth.jwt() ->> 'is_anonymous')::boolean) IS NOT TRUE);
