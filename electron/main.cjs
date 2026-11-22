@@ -4,8 +4,7 @@ const log = require('electron-log');
 const path = require('path');
 const ollama = require('./ollama.cjs');
 const { setupUpdater } = require('./updater.cjs');
-
-const APP_URL = 'https://webbai.lovable.app';
+const { APP_URL } = require('./app-url.cjs');
 
 
 let mainWindow = null;

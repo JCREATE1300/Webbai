@@ -1,4 +1,5 @@
 # Model download improvements
+- [x] Open the installed app directly at chat and verify the startup URL test.
 - [x] Finish Node 24 setup: root runtime requirement, Node 24 types, lockfile, typecheck, and tests.
 - [x] Track combined progress across all model files and handle download failures.
 - [x] Show the model name and percentage to two decimal places.
