@@ -16,3 +16,4 @@
 - Store account-free conversations in browser/device storage; never expose existing private account records.
 - Share desktop update state through a root provider and keep updater IPC in electron/updater.cjs, included in packaging, so the download button and notification stay synchronized.
 - Resolve Windows downloads from public GitHub release assets, preferring the standalone EXE and supporting ZIP-only releases; do not sign private storage downloads for anonymous visitors.
+- Use Node 24 or newer for web development and CI, with matching Node type definitions; `.nvmrc` selects Node 24 so local tooling and the Windows build stay consistent.

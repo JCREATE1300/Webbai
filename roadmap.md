@@ -1,4 +1,5 @@
 # Model download improvements
+- [x] Finish Node 24 setup: root runtime requirement, Node 24 types, lockfile, typecheck, and tests.
 - [x] Track combined progress across all model files and handle download failures.
 - [x] Show the model name and percentage to two decimal places.
 - [x] Thirteen automated tests passed, including combined progress, download errors, interrupted streams, selection, uncapped library parsing, and exact versions.
